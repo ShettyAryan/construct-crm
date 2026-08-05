@@ -1,13 +1,31 @@
 import { PrismaClient } from "@prisma/client";
+import { PrismaLibSql } from "@prisma/adapter-libsql";
 
 const globalForPrisma = globalThis as unknown as {
   prisma: PrismaClient | undefined;
 };
 
-export const db =
-  globalForPrisma.prisma ??
-  new PrismaClient({
+function createPrismaClient() {
+  const tursoUrl = process.env.TURSO_DATABASE_URL;
+
+  // Hosted SQLite (Turso / libSQL) — use on Vercel for multi-device access
+  if (tursoUrl && (tursoUrl.startsWith("libsql://") || tursoUrl.startsWith("https://"))) {
+    const adapter = new PrismaLibSql({
+      url: tursoUrl,
+      authToken: process.env.TURSO_AUTH_TOKEN,
+    });
+    return new PrismaClient({
+      adapter,
+      log: process.env.NODE_ENV === "development" ? ["error", "warn"] : ["error"],
+    });
+  }
+
+  // Local file SQLite for development
+  return new PrismaClient({
     log: process.env.NODE_ENV === "development" ? ["error", "warn"] : ["error"],
   });
+}
+
+export const db = globalForPrisma.prisma ?? createPrismaClient();
 
 if (process.env.NODE_ENV !== "production") globalForPrisma.prisma = db;

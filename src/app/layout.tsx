@@ -5,6 +5,8 @@ import { ThemeProvider } from "@/components/layout/theme-provider";
 import { AppShell } from "@/components/layout/app-shell";
 import "./globals.css";
 
+export const dynamic = "force-dynamic";
+
 const geistSans = Geist({
   variable: "--font-geist-sans",
   subsets: ["latin"],
