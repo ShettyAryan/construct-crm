@@ -1,0 +1,143 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+enum Agency {
+  ConstructDev
+  ConstructXR
+}
+
+enum LeadStatus {
+  New
+  Qualified
+  Discovery
+  ProposalSent
+  Negotiation
+  Won
+  Lost
+}
+
+enum Priority {
+  Low
+  Medium
+  High
+  Hot
+}
+
+enum ActivityType {
+  NOTE
+  CALL
+  MEETING
+  FOLLOW_UP
+  STATUS_CHANGE
+}
+
+model Lead {
+  id          String     @id @default(cuid())
+  company     String
+  contact     String
+  phone       String?
+  email       String?
+  website     String?
+  linkedin    String?
+  industry    String?
+  city        String?
+  agency      Agency
+  services    String     @default("[]") // JSON array
+  budget      Int?
+  source      String?
+  priority    Priority   @default(Medium)
+  status      LeadStatus @default(New)
+  notes       String?
+  nextFollowUp DateTime?
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+
+  calls      Call[]
+  meetings   Meeting[]
+  followUps  FollowUp[]
+  notesList  Note[]
+  activities Activity[]
+  client     Client?
+}
+
+model Call {
+  id          String   @id @default(cuid())
+  date        DateTime
+  durationMin Int?
+  outcome     String?
+  summary     String
+  nextAction  String?
+  leadId      String
+  lead        Lead     @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  createdAt   DateTime @default(now())
+}
+
+model Meeting {
+  id           String   @id @default(cuid())
+  date         DateTime
+  summary      String
+  painPoints   String?
+  requirements String?
+  nextSteps    String?
+  leadId       String
+  lead         Lead     @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  createdAt    DateTime @default(now())
+}
+
+model FollowUp {
+  id        String   @id @default(cuid())
+  date      DateTime
+  time      String?
+  priority  Priority @default(Medium)
+  reminder  String?
+  completed Boolean  @default(false)
+  leadId    String?
+  lead      Lead?    @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+}
+
+model Note {
+  id        String   @id @default(cuid())
+  body      String
+  leadId    String
+  lead      Lead     @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+}
+
+model Activity {
+  id        String       @id @default(cuid())
+  type      ActivityType
+  title     String
+  body      String?
+  leadId    String
+  lead      Lead         @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  createdAt DateTime     @default(now())
+}
+
+model Task {
+  id        String    @id @default(cuid())
+  title     String
+  dueDate   DateTime?
+  priority  Priority  @default(Medium)
+  completed Boolean   @default(false)
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+}
+
+model Client {
+  id       String   @id @default(cuid())
+  company  String
+  projects String   @default("[]") // JSON array
+  revenue  Int      @default(0)
+  services String   @default("[]") // JSON array
+  leadId   String   @unique
+  lead     Lead     @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
