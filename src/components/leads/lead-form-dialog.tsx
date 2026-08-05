@@ -128,11 +128,14 @@ export function LeadFormDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-2xl">
-        <DialogHeader>
+      <DialogContent className="flex max-h-[min(92dvh,92vh)] w-[calc(100%-1.5rem)] flex-col overflow-hidden p-0 sm:max-w-2xl">
+        <DialogHeader className="shrink-0 px-4 pt-4 pr-12">
           <DialogTitle>{lead ? "Edit lead" : "New lead"}</DialogTitle>
         </DialogHeader>
-        <form onSubmit={onSubmit} className="grid gap-4">
+        <form
+          onSubmit={onSubmit}
+          className="grid flex-1 gap-4 overflow-y-auto px-4 pb-4"
+        >
           <div className="grid gap-4 sm:grid-cols-2">
             <Field label="Company" error={form.formState.errors.company?.message}>
               <Input {...form.register("company")} />
@@ -249,11 +252,11 @@ export function LeadFormDialog({
             <Textarea rows={3} {...form.register("notes")} />
           </Field>
 
-          <DialogFooter>
-            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+          <DialogFooter className="sticky bottom-0 -mx-4 border-t bg-popover px-4 py-3">
+            <Button type="button" variant="outline" className="w-full sm:w-auto" onClick={() => onOpenChange(false)}>
               Cancel
             </Button>
-            <Button type="submit" disabled={saving}>
+            <Button type="submit" className="w-full sm:w-auto" disabled={saving}>
               {saving ? "Saving…" : lead ? "Save changes" : "Create lead"}
             </Button>
           </DialogFooter>

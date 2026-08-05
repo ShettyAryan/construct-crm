@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { Toaster } from "@/components/ui/sonner";
 import { ThemeProvider } from "@/components/layout/theme-provider";
@@ -22,6 +22,12 @@ export const metadata: Metadata = {
   description: "Personal sales CRM for ConstructDev & ConstructXR",
 };
 
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover",
+};
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -34,7 +40,7 @@ export default function RootLayout({
       >
         <ThemeProvider>
           <AppShell>{children}</AppShell>
-          <Toaster richColors position="bottom-right" />
+          <Toaster richColors position="top-center" />
         </ThemeProvider>
       </body>
     </html>

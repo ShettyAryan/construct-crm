@@ -54,7 +54,7 @@ export function TasksView({ tasks }: { tasks: Task[] }) {
         title="Tasks"
         description="Simple personal task list"
         actions={
-          <Button onClick={() => setOpen(true)}>
+          <Button className="w-full sm:w-auto" onClick={() => setOpen(true)}>
             <Plus className="size-4" />
             New task
           </Button>
@@ -78,13 +78,14 @@ export function TasksView({ tasks }: { tasks: Task[] }) {
             <li
               key={task.id}
               className={cn(
-                "flex items-center gap-3 px-4 py-3",
+                "flex items-start gap-3 px-3 py-3 sm:items-center sm:px-4",
                 task.completed && "opacity-60"
               )}
             >
               <Checkbox
                 checked={task.completed}
                 disabled={pending}
+                className="mt-1 sm:mt-0"
                 onCheckedChange={(checked) => {
                   startTransition(async () => {
                     try {
@@ -98,7 +99,7 @@ export function TasksView({ tasks }: { tasks: Task[] }) {
               <div className="min-w-0 flex-1">
                 <p
                   className={cn(
-                    "text-sm font-medium",
+                    "text-sm font-medium break-words",
                     task.completed && "line-through"
                   )}
                 >
@@ -110,23 +111,25 @@ export function TasksView({ tasks }: { tasks: Task[] }) {
                     : "No due date"}
                 </p>
               </div>
-              <PriorityBadge priority={task.priority} />
-              <Button
-                variant="ghost"
-                size="icon-sm"
-                onClick={() => {
-                  startTransition(async () => {
-                    try {
-                      await deleteTask(task.id);
-                      toast.success("Task deleted");
-                    } catch {
-                      toast.error("Failed to delete");
-                    }
-                  });
-                }}
-              >
-                <Trash2 className="size-3.5 text-muted-foreground" />
-              </Button>
+              <div className="flex shrink-0 items-center gap-1">
+                <PriorityBadge priority={task.priority} />
+                <Button
+                  variant="ghost"
+                  size="icon-sm"
+                  onClick={() => {
+                    startTransition(async () => {
+                      try {
+                        await deleteTask(task.id);
+                        toast.success("Task deleted");
+                      } catch {
+                        toast.error("Failed to delete");
+                      }
+                    });
+                  }}
+                >
+                  <Trash2 className="size-3.5 text-muted-foreground" />
+                </Button>
+              </div>
             </li>
           ))}
         </ul>

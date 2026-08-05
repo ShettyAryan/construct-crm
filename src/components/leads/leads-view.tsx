@@ -73,34 +73,36 @@ export function LeadsView({ leads }: { leads: Lead[] }) {
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-        <div className="flex flex-1 flex-col gap-2 sm:flex-row sm:items-center">
+      <div className="flex flex-col gap-3">
+        <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
           <SearchInput
             value={q}
             onChange={setQ}
             placeholder="Search company, contact, email…"
-            className="w-full sm:max-w-xs"
+            className="w-full sm:max-w-xs sm:flex-1"
           />
-          <AppSelect
-            value={agency}
-            onValueChange={setAgency}
-            options={agencyFilterOptions}
-            triggerClassName="w-full sm:w-[140px]"
-          />
-          <AppSelect
-            value={status}
-            onValueChange={setStatus}
-            options={statusFilterOptions}
-            triggerClassName="w-full sm:w-[150px]"
-          />
-          <AppSelect
-            value={priority}
-            onValueChange={setPriority}
-            options={priorityFilterOptions}
-            triggerClassName="w-full sm:w-[140px]"
-          />
+          <div className="grid grid-cols-1 gap-2 sm:flex sm:flex-wrap">
+            <AppSelect
+              value={agency}
+              onValueChange={setAgency}
+              options={agencyFilterOptions}
+              triggerClassName="w-full sm:w-[140px]"
+            />
+            <AppSelect
+              value={status}
+              onValueChange={setStatus}
+              options={statusFilterOptions}
+              triggerClassName="w-full sm:w-[150px]"
+            />
+            <AppSelect
+              value={priority}
+              onValueChange={setPriority}
+              options={priorityFilterOptions}
+              triggerClassName="w-full sm:w-[140px]"
+            />
+          </div>
         </div>
-        <Button onClick={() => setOpen(true)}>
+        <Button className="w-full sm:w-auto sm:self-start" onClick={() => setOpen(true)}>
           <Plus className="size-4" />
           New lead
         </Button>
@@ -118,59 +120,96 @@ export function LeadsView({ leads }: { leads: Lead[] }) {
           }
         />
       ) : (
-        <div className="overflow-hidden rounded-lg border">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Company</TableHead>
-                <TableHead>Contact</TableHead>
-                <TableHead>Agency</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Priority</TableHead>
-                <TableHead>Budget</TableHead>
-                <TableHead>Next follow-up</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filtered.map((lead) => (
-                <TableRow key={lead.id} className="cursor-pointer">
-                  <TableCell>
-                    <Link
-                      href={`/leads/${lead.id}`}
-                      className="font-medium hover:underline"
-                    >
-                      {lead.company}
-                    </Link>
-                    {lead.city ? (
-                      <p className="text-xs text-muted-foreground">{lead.city}</p>
-                    ) : null}
-                  </TableCell>
-                  <TableCell>
-                    <div>{lead.contact}</div>
-                    {lead.email ? (
-                      <p className="text-xs text-muted-foreground">{lead.email}</p>
-                    ) : null}
-                  </TableCell>
-                  <TableCell>
-                    <AgencyBadge agency={lead.agency} />
-                  </TableCell>
-                  <TableCell>
-                    <StatusBadge status={lead.status} />
-                  </TableCell>
-                  <TableCell>
-                    <PriorityBadge priority={lead.priority} />
-                  </TableCell>
-                  <TableCell>{formatBudget(lead.budget)}</TableCell>
-                  <TableCell className="text-muted-foreground">
+        <>
+          {/* Mobile / tablet cards */}
+          <div className="grid gap-3 md:hidden">
+            {filtered.map((lead) => (
+              <Link
+                key={lead.id}
+                href={`/leads/${lead.id}`}
+                className="rounded-lg border bg-card p-3.5 transition-colors active:bg-muted/40"
+              >
+                <div className="flex items-start justify-between gap-2">
+                  <div className="min-w-0">
+                    <p className="truncate font-medium">{lead.company}</p>
+                    <p className="mt-0.5 truncate text-sm text-muted-foreground">
+                      {lead.contact}
+                      {lead.city ? ` · ${lead.city}` : ""}
+                    </p>
+                  </div>
+                  <PriorityBadge priority={lead.priority} />
+                </div>
+                <div className="mt-3 flex flex-wrap items-center gap-1.5">
+                  <AgencyBadge agency={lead.agency} />
+                  <StatusBadge status={lead.status} />
+                </div>
+                <div className="mt-2 flex items-center justify-between text-xs text-muted-foreground">
+                  <span>{formatBudget(lead.budget)}</span>
+                  <span>
                     {lead.nextFollowUp
-                      ? format(lead.nextFollowUp, "MMM d, yyyy")
-                      : "—"}
-                  </TableCell>
+                      ? format(lead.nextFollowUp, "MMM d")
+                      : "No follow-up"}
+                  </span>
+                </div>
+              </Link>
+            ))}
+          </div>
+
+          {/* Desktop table */}
+          <div className="hidden overflow-hidden rounded-lg border md:block">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Company</TableHead>
+                  <TableHead>Contact</TableHead>
+                  <TableHead>Agency</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Priority</TableHead>
+                  <TableHead>Budget</TableHead>
+                  <TableHead>Next follow-up</TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </div>
+              </TableHeader>
+              <TableBody>
+                {filtered.map((lead) => (
+                  <TableRow key={lead.id}>
+                    <TableCell>
+                      <Link
+                        href={`/leads/${lead.id}`}
+                        className="font-medium hover:underline"
+                      >
+                        {lead.company}
+                      </Link>
+                      {lead.city ? (
+                        <p className="text-xs text-muted-foreground">{lead.city}</p>
+                      ) : null}
+                    </TableCell>
+                    <TableCell>
+                      <div>{lead.contact}</div>
+                      {lead.email ? (
+                        <p className="text-xs text-muted-foreground">{lead.email}</p>
+                      ) : null}
+                    </TableCell>
+                    <TableCell>
+                      <AgencyBadge agency={lead.agency} />
+                    </TableCell>
+                    <TableCell>
+                      <StatusBadge status={lead.status} />
+                    </TableCell>
+                    <TableCell>
+                      <PriorityBadge priority={lead.priority} />
+                    </TableCell>
+                    <TableCell>{formatBudget(lead.budget)}</TableCell>
+                    <TableCell className="text-muted-foreground">
+                      {lead.nextFollowUp
+                        ? format(lead.nextFollowUp, "MMM d, yyyy")
+                        : "—"}
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        </>
       )}
 
       <LeadFormDialog open={open} onOpenChange={setOpen} />

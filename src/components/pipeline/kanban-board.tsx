@@ -107,7 +107,8 @@ export function KanbanBoard({ leads }: { leads: Lead[] }) {
     >
       <div
         className={cn(
-          "flex gap-3 overflow-x-auto pb-4",
+          "-mx-3 flex gap-3 overflow-x-auto px-3 pb-4 snap-x snap-mandatory sm:mx-0 sm:px-0",
+          "[scrollbar-width:thin]",
           pending && "opacity-90"
         )}
       >
@@ -139,7 +140,8 @@ function KanbanColumn({
     <div
       ref={setNodeRef}
       className={cn(
-        "flex w-64 shrink-0 flex-col rounded-lg border bg-muted/30",
+        "flex w-[min(85vw,16.5rem)] shrink-0 snap-start flex-col rounded-lg border bg-muted/30 sm:w-64",
+        "max-h-[min(70vh,36rem)]",
         isOver && "ring-2 ring-foreground/15"
       )}
     >
@@ -153,7 +155,7 @@ function KanbanColumn({
         items={leads.map((l) => l.id)}
         strategy={verticalListSortingStrategy}
       >
-        <div className="flex flex-1 flex-col gap-2 px-2 pb-2">
+        <div className="flex flex-1 flex-col gap-2 overflow-y-auto px-2 pb-2">
           {leads.map((lead) => (
             <SortableKanbanCard key={lead.id} lead={lead} />
           ))}

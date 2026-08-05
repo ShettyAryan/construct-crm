@@ -55,9 +55,9 @@ export function LeadDetailView({ lead }: { lead: LeadDetail }) {
         ) : null}
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-[1fr_320px]">
-        <div className="space-y-6">
-          <section className="rounded-lg border p-4">
+      <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(16rem,20rem)]">
+        <div className="min-w-0 space-y-6">
+          <section className="rounded-lg border p-3 sm:p-4">
             <h2 className="mb-3 text-sm font-medium">Company details</h2>
             <dl className="grid gap-3 sm:grid-cols-2">
               <Detail label="Email" value={lead.email} />
@@ -125,7 +125,7 @@ export function LeadDetailView({ lead }: { lead: LeadDetail }) {
           </section>
         </div>
 
-        <aside className="space-y-4">
+        <aside className="grid gap-4 sm:grid-cols-2 lg:grid-cols-1">
           <SideBlock
             title="Calls"
             icon={Phone}

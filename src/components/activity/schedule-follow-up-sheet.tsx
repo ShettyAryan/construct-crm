@@ -69,7 +69,7 @@ export function ScheduleFollowUpSheet({
         <SheetHeader>
           <SheetTitle>Schedule follow-up</SheetTitle>
         </SheetHeader>
-        <form onSubmit={onSubmit} className="mt-4 flex flex-1 flex-col gap-4">
+        <form onSubmit={onSubmit} className="mt-0 flex flex-1 flex-col gap-4 overflow-y-auto px-4 pb-4">
           <div className="grid gap-1.5">
             <Label>Date</Label>
             <Input type="date" {...form.register("date")} />

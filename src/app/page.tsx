@@ -206,19 +206,19 @@ function Panel({
 }) {
   return (
     <section className="rounded-lg border">
-      <div className="flex items-center justify-between border-b px-4 py-3">
-        <div className="flex items-center gap-2">
-          <Icon className="size-3.5 text-muted-foreground" />
-          <h2 className="text-sm font-medium">{title}</h2>
+      <div className="mb-3 flex items-center justify-between gap-2 border-b px-3 py-3 sm:px-4">
+        <div className="flex min-w-0 items-center gap-2">
+          <Icon className="size-3.5 shrink-0 text-muted-foreground" />
+          <h2 className="truncate text-sm font-medium">{title}</h2>
         </div>
         <Link
           href={href}
-          className="text-xs text-muted-foreground hover:text-foreground"
+          className="shrink-0 text-xs text-muted-foreground hover:text-foreground"
         >
           View all
         </Link>
       </div>
-      <div className="px-4 py-1">{children}</div>
+      <div className="px-3 py-1 sm:px-4">{children}</div>
     </section>
   );
 }

@@ -33,24 +33,24 @@ export function LeadDetailActions({ lead }: { lead: Lead }) {
 
   return (
     <>
-      <div className="flex flex-wrap gap-2">
-        <Button variant="outline" size="sm" onClick={() => setCallOpen(true)}>
+      <div className="flex w-full flex-wrap gap-2 sm:justify-end">
+        <Button variant="outline" size="sm" className="flex-1 sm:flex-none" onClick={() => setCallOpen(true)}>
           <Phone className="size-3.5" />
           Log call
         </Button>
-        <Button variant="outline" size="sm" onClick={() => setNoteOpen(true)}>
+        <Button variant="outline" size="sm" className="flex-1 sm:flex-none" onClick={() => setNoteOpen(true)}>
           <StickyNote className="size-3.5" />
           Add note
         </Button>
-        <Button variant="outline" size="sm" onClick={() => setFollowOpen(true)}>
+        <Button variant="outline" size="sm" className="flex-1 sm:flex-none" onClick={() => setFollowOpen(true)}>
           <Bell className="size-3.5" />
           Follow-up
         </Button>
-        <Button variant="outline" size="sm" onClick={() => setMeetingOpen(true)}>
+        <Button variant="outline" size="sm" className="flex-1 sm:flex-none" onClick={() => setMeetingOpen(true)}>
           <Calendar className="size-3.5" />
           Meeting
         </Button>
-        <Button variant="outline" size="sm" onClick={() => setEditOpen(true)}>
+        <Button variant="outline" size="sm" className="flex-1 sm:flex-none" onClick={() => setEditOpen(true)}>
           <Pencil className="size-3.5" />
           Edit
         </Button>
