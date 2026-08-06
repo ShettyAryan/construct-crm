@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { format } from "date-fns";
 import {
+  Banknote,
   Bell,
   Flame,
   LayoutDashboard,
@@ -50,6 +51,27 @@ export default async function DashboardPage() {
           value={formatBudget(data.revenuePipeline)}
           icon={Wallet}
           hint="Open deal budgets"
+        />
+      </div>
+
+      <div className="mt-3 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+        <StatCard
+          label="Amount agreed"
+          value={formatBudget(data.amountAgreed)}
+          icon={Banknote}
+          hint="Total deal value on won clients"
+        />
+        <StatCard
+          label="Amount collected"
+          value={formatBudget(data.amountCollected)}
+          icon={Wallet}
+          hint="Payments received so far"
+        />
+        <StatCard
+          label="Outstanding"
+          value={formatBudget(data.amountOutstanding)}
+          icon={Trophy}
+          hint="Agreed minus collected"
         />
       </div>
 

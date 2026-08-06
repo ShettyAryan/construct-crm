@@ -14,17 +14,23 @@ export async function getDashboardData() {
     hotLeads,
     dealsWon,
     pipelineLeads,
+    clients,
     followUpsDueToday,
     upcomingCalls,
     recentActivity,
     pendingTasks,
   ] = await Promise.all([
     db.lead.count(),
-    db.lead.count({ where: { priority: "Hot", status: { notIn: ["Won", "Lost"] } } }),
+    db.lead.count({
+      where: { priority: "Hot", status: { notIn: ["Won", "Lost"] } },
+    }),
     db.lead.count({ where: { status: "Won" } }),
     db.lead.findMany({
       where: { status: { notIn: ["Won", "Lost"] } },
       select: { budget: true },
+    }),
+    db.client.findMany({
+      select: { amountAgreed: true, amountCollected: true },
     }),
     db.followUp.findMany({
       where: {
@@ -59,7 +65,13 @@ export async function getDashboardData() {
     0
   );
 
-  // Upcoming calls: also surface leads with nextFollowUp as "calls to make"
+  const amountAgreed = clients.reduce((sum, c) => sum + c.amountAgreed, 0);
+  const amountCollected = clients.reduce(
+    (sum, c) => sum + c.amountCollected,
+    0
+  );
+  const amountOutstanding = Math.max(0, amountAgreed - amountCollected);
+
   const upcomingFollowCallLeads = await db.lead.findMany({
     where: {
       nextFollowUp: { gte: todayStart, lte: weekEnd },
@@ -74,6 +86,9 @@ export async function getDashboardData() {
     hotLeads,
     dealsWon,
     revenuePipeline,
+    amountAgreed,
+    amountCollected,
+    amountOutstanding,
     followUpsDueToday,
     upcomingCalls,
     upcomingFollowCallLeads,

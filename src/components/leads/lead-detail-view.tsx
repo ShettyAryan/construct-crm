@@ -55,6 +55,45 @@ export function LeadDetailView({ lead }: { lead: LeadDetail }) {
         ) : null}
       </div>
 
+      {lead.client ? (
+        <section className="mb-6 rounded-lg border p-3 sm:p-4">
+          <div className="mb-3 flex items-center justify-between gap-2">
+            <h2 className="text-sm font-medium">Payment</h2>
+            <Link
+              href="/clients"
+              className="text-xs text-muted-foreground underline-offset-4 hover:underline"
+            >
+              Update on Clients
+            </Link>
+          </div>
+          <dl className="grid gap-3 sm:grid-cols-3">
+            <div>
+              <dt className="text-xs text-muted-foreground">Amount agreed</dt>
+              <dd className="mt-0.5 text-sm font-medium">
+                {formatBudget(lead.client.amountAgreed)}
+              </dd>
+            </div>
+            <div>
+              <dt className="text-xs text-muted-foreground">Amount collected</dt>
+              <dd className="mt-0.5 text-sm font-medium">
+                {formatBudget(lead.client.amountCollected)}
+              </dd>
+            </div>
+            <div>
+              <dt className="text-xs text-muted-foreground">Outstanding</dt>
+              <dd className="mt-0.5 text-sm font-medium">
+                {formatBudget(
+                  Math.max(
+                    0,
+                    lead.client.amountAgreed - lead.client.amountCollected
+                  )
+                )}
+              </dd>
+            </div>
+          </dl>
+        </section>
+      ) : null}
+
       <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(16rem,20rem)]">
         <div className="min-w-0 space-y-6">
           <section className="rounded-lg border p-3 sm:p-4">

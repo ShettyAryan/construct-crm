@@ -75,3 +75,18 @@ export const taskSchema = z.object({
 });
 
 export type TaskInput = z.infer<typeof taskSchema>;
+
+export const clientPaymentSchema = z
+  .object({
+    amountAgreed: z.coerce.number().int().nonnegative("Agreed amount cannot be negative"),
+    amountCollected: z.coerce
+      .number()
+      .int()
+      .nonnegative("Collected amount cannot be negative"),
+  })
+  .refine((data) => data.amountCollected <= data.amountAgreed, {
+    message: "Collected cannot exceed agreed amount",
+    path: ["amountCollected"],
+  });
+
+export type ClientPaymentInput = z.infer<typeof clientPaymentSchema>;

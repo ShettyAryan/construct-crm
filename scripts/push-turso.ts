@@ -17,15 +17,18 @@ async function main() {
 
   if (!url || !authToken) {
     throw new Error(
-      "Set TURSO_DATABASE_URL and TURSO_AUTH_TOKEN in .env before running db:push:turso"
+      "Set TURSO_DATABASE_URL and TURSO_AUTH_TOKEN in .env before running db:push:turso",
     );
   }
 
   if (url.startsWith("file:")) {
-    throw new Error("TURSO_DATABASE_URL must be a libsql:// or https:// Turso URL");
+    throw new Error(
+      "TURSO_DATABASE_URL must be a libsql:// or https:// Turso URL",
+    );
   }
 
   const migrationsDir = join(process.cwd(), "prisma", "migrations");
+
   const folders = readdirSync(migrationsDir, { withFileTypes: true })
     .filter((d) => d.isDirectory())
     .map((d) => d.name)
@@ -35,25 +38,38 @@ async function main() {
     throw new Error("No migrations found in prisma/migrations");
   }
 
-  const client = createClient({ url, authToken });
+  const client = createClient({
+    url,
+    authToken,
+  });
 
   for (const folder of folders) {
     const sqlPath = join(migrationsDir, folder, "migration.sql");
     const sql = readFileSync(sqlPath, "utf8");
-    console.log(`Applying ${folder}…`);
 
-    // Turso/libSQL executes one statement at a time more reliably
-    const statements = sql
+    console.log(`Applying ${folder}...`);
+
+    // Remove Prisma comment lines before splitting
+    const cleanedSql = sql.replace(/^--.*$/gm, "");
+
+    const statements = cleanedSql
       .split(";")
       .map((s) => s.trim())
-      .filter((s) => s.length > 0 && !s.startsWith("--"));
+      .filter(Boolean);
 
     for (const statement of statements) {
-      await client.execute(statement);
+      try {
+        await client.execute(statement);
+      } catch (error) {
+        console.error("\nFailed SQL statement:\n");
+        console.error(statement);
+        console.error("\n");
+        throw error;
+      }
     }
   }
 
-  console.log("Turso schema is up to date.");
+  console.log("✅ Turso schema is up to date.");
 }
 
 main().catch((err) => {

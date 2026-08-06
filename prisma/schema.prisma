@@ -131,13 +131,14 @@ model Task {
 }
 
 model Client {
-  id       String   @id @default(cuid())
-  company  String
-  projects String   @default("[]") // JSON array
-  revenue  Int      @default(0)
-  services String   @default("[]") // JSON array
-  leadId   String   @unique
-  lead     Lead     @relation(fields: [leadId], references: [id], onDelete: Cascade)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id              String   @id @default(cuid())
+  company         String
+  projects        String   @default("[]") // JSON array
+  amountAgreed    Int      @default(0)
+  amountCollected Int      @default(0)
+  services        String   @default("[]") // JSON array
+  leadId          String   @unique
+  lead            Lead     @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
 }
