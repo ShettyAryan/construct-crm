@@ -1,9 +1,9 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
 import type { Priority } from "@prisma/client";
 import { db } from "@/lib/db";
 import { parseISTInput } from "@/lib/datetime";
+import { revalidateTasks } from "@/lib/revalidate";
 import { taskSchema, type TaskInput } from "@/lib/validators";
 
 function emptyToNull(v?: string | null) {
@@ -25,8 +25,7 @@ export async function createTask(raw: TaskInput) {
       priority: data.priority as Priority,
     },
   });
-  revalidatePath("/tasks");
-  revalidatePath("/");
+  revalidateTasks();
   return task;
 }
 
@@ -35,13 +34,11 @@ export async function toggleTask(id: string, completed: boolean) {
     where: { id },
     data: { completed },
   });
-  revalidatePath("/tasks");
-  revalidatePath("/");
+  revalidateTasks();
   return task;
 }
 
 export async function deleteTask(id: string) {
   await db.task.delete({ where: { id } });
-  revalidatePath("/tasks");
-  revalidatePath("/");
+  revalidateTasks();
 }

@@ -14,7 +14,7 @@ export async function getDashboardData() {
     pipelineLeads,
     clients,
     followUpsDueToday,
-    upcomingCalls,
+    upcomingFollowUps,
     recentActivity,
     pendingTasks,
   ] = await Promise.all([
@@ -38,13 +38,14 @@ export async function getDashboardData() {
       include: { lead: true },
       orderBy: { date: "asc" },
     }),
-    db.call.findMany({
+    db.followUp.findMany({
       where: {
+        completed: false,
         date: { gte: todayStart, lte: weekEnd },
       },
       include: { lead: true },
       orderBy: { date: "asc" },
-      take: 8,
+      take: 10,
     }),
     db.activity.findMany({
       include: { lead: true },
@@ -70,15 +71,6 @@ export async function getDashboardData() {
   );
   const amountOutstanding = Math.max(0, amountAgreed - amountCollected);
 
-  const upcomingFollowCallLeads = await db.lead.findMany({
-    where: {
-      nextFollowUp: { gte: todayStart, lte: weekEnd },
-      status: { notIn: ["Won", "Lost"] },
-    },
-    orderBy: { nextFollowUp: "asc" },
-    take: 8,
-  });
-
   return {
     totalLeads,
     hotLeads,
@@ -88,8 +80,7 @@ export async function getDashboardData() {
     amountCollected,
     amountOutstanding,
     followUpsDueToday,
-    upcomingCalls,
-    upcomingFollowCallLeads,
+    upcomingFollowUps,
     recentActivity,
     pendingTasks,
   };

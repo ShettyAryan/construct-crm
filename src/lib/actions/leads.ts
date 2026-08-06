@@ -1,10 +1,14 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
 import type { Agency, LeadStatus, Priority } from "@prisma/client";
 import { db } from "@/lib/db";
 import { toJsonArray } from "@/lib/constants";
 import { parseISTInput } from "@/lib/datetime";
+import { revalidateCrm } from "@/lib/revalidate";
+import {
+  ensureFollowUpFromLeadDate,
+  syncNotesFromLeadForm,
+} from "@/lib/sync-lead";
 import { leadSchema, type LeadInput } from "@/lib/validators";
 import { ensureClientForWonLead } from "@/lib/actions/clients";
 
@@ -74,11 +78,18 @@ export async function getLead(id: string) {
   });
 }
 
+export async function getLeadOptions() {
+  return db.lead.findMany({
+    where: { status: { notIn: ["Lost"] } },
+    select: { id: true, company: true, contact: true },
+    orderBy: { company: "asc" },
+  });
+}
+
 export async function createLead(raw: LeadInput) {
   const parsed = leadSchema.parse(raw);
-  const lead = await db.lead.create({
-    data: mapLeadData(parsed),
-  });
+  const data = mapLeadData(parsed);
+  const lead = await db.lead.create({ data });
 
   await db.activity.create({
     data: {
@@ -89,14 +100,23 @@ export async function createLead(raw: LeadInput) {
     },
   });
 
+  if (data.notes) {
+    await syncNotesFromLeadForm(lead.id, data.notes, null, {
+      skipActivity: true,
+    });
+  }
+
+  await ensureFollowUpFromLeadDate(
+    lead.id,
+    data.nextFollowUp,
+    data.priority
+  );
+
   if (lead.status === "Won") {
     await ensureClientForWonLead(lead.id);
   }
 
-  revalidatePath("/");
-  revalidatePath("/leads");
-  revalidatePath("/pipeline");
-  revalidatePath("/clients");
+  revalidateCrm(lead.id);
   return lead;
 }
 
@@ -119,15 +139,15 @@ export async function updateLead(id: string, raw: LeadInput) {
     });
   }
 
+  await syncNotesFromLeadForm(id, data.notes, existing.notes);
+
+  await ensureFollowUpFromLeadDate(id, data.nextFollowUp, data.priority);
+
   if (lead.status === "Won") {
     await ensureClientForWonLead(lead.id);
   }
 
-  revalidatePath("/");
-  revalidatePath("/leads");
-  revalidatePath(`/leads/${id}`);
-  revalidatePath("/pipeline");
-  revalidatePath("/clients");
+  revalidateCrm(id);
   return lead;
 }
 
@@ -154,18 +174,11 @@ export async function updateLeadStatus(id: string, status: LeadStatus) {
     await ensureClientForWonLead(id);
   }
 
-  revalidatePath("/");
-  revalidatePath("/leads");
-  revalidatePath(`/leads/${id}`);
-  revalidatePath("/pipeline");
-  revalidatePath("/clients");
+  revalidateCrm(id);
   return lead;
 }
 
 export async function deleteLead(id: string) {
   await db.lead.delete({ where: { id } });
-  revalidatePath("/");
-  revalidatePath("/leads");
-  revalidatePath("/pipeline");
-  revalidatePath("/clients");
+  revalidateCrm(id);
 }

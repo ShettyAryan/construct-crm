@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "sonner";
@@ -23,14 +23,18 @@ import { scheduleFollowUp } from "@/lib/actions/activity";
 
 const priorityOptions = PRIORITIES.map((p) => ({ value: p, label: p }));
 
+export type LeadOption = { id: string; company: string; contact: string };
+
 export function ScheduleFollowUpSheet({
   open,
   onOpenChange,
   leadId,
+  leads = [],
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   leadId?: string;
+  leads?: LeadOption[];
 }) {
   const [saving, setSaving] = useState(false);
   const form = useForm<FollowUpInput>({
@@ -44,12 +48,8 @@ export function ScheduleFollowUpSheet({
     },
   });
 
-  const onSubmit = form.handleSubmit(async (values) => {
-    setSaving(true);
-    try {
-      await scheduleFollowUp({ ...values, leadId: leadId ?? values.leadId });
-      toast.success("Follow-up scheduled");
-      onOpenChange(false);
+  useEffect(() => {
+    if (open) {
       form.reset({
         leadId: leadId ?? "",
         date: todayISTDateInput(),
@@ -57,6 +57,27 @@ export function ScheduleFollowUpSheet({
         priority: "Medium",
         reminder: "",
       });
+    }
+  }, [open, leadId, form]);
+
+  const showLeadPicker = !leadId && leads.length > 0;
+  const leadOptions = leads.map((l) => ({
+    value: l.id,
+    label: `${l.company} · ${l.contact}`,
+  }));
+
+  const onSubmit = form.handleSubmit(async (values) => {
+    const resolvedLeadId = leadId || values.leadId;
+    if (!resolvedLeadId) {
+      toast.error("Select a lead for this follow-up");
+      return;
+    }
+
+    setSaving(true);
+    try {
+      await scheduleFollowUp({ ...values, leadId: resolvedLeadId });
+      toast.success("Follow-up scheduled");
+      onOpenChange(false);
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Failed to schedule");
     } finally {
@@ -74,6 +95,22 @@ export function ScheduleFollowUpSheet({
           onSubmit={onSubmit}
           className="mt-0 flex flex-1 flex-col gap-4 overflow-y-auto px-4 pb-4"
         >
+          {showLeadPicker ? (
+            <div className="grid gap-1.5">
+              <Label>Lead</Label>
+              <AppSelect
+                value={form.watch("leadId") || ""}
+                onValueChange={(v) =>
+                  form.setValue("leadId", v, {
+                    shouldDirty: true,
+                    shouldValidate: true,
+                  })
+                }
+                options={leadOptions}
+                placeholder="Select lead"
+              />
+            </div>
+          ) : null}
           <div className="grid gap-1.5">
             <Label>Date (IST)</Label>
             <Input type="date" {...form.register("date")} />

@@ -1,9 +1,10 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
 import type { Priority } from "@prisma/client";
 import { db } from "@/lib/db";
 import { parseISTInput } from "@/lib/datetime";
+import { revalidateCrm } from "@/lib/revalidate";
+import { syncLeadNextFollowUp } from "@/lib/sync-lead";
 import {
   callSchema,
   followUpSchema,
@@ -43,9 +44,7 @@ export async function logCall(raw: CallInput) {
     },
   });
 
-  revalidatePath(`/leads/${data.leadId}`);
-  revalidatePath("/calls");
-  revalidatePath("/");
+  revalidateCrm(data.leadId);
   return call;
 }
 
@@ -71,19 +70,25 @@ export async function logMeeting(raw: MeetingInput) {
     },
   });
 
-  revalidatePath(`/leads/${data.leadId}`);
-  revalidatePath("/meetings");
-  revalidatePath("/");
+  revalidateCrm(data.leadId);
   return meeting;
 }
 
 export async function addNote(raw: NoteInput) {
   const data = noteSchema.parse(raw);
+  const body = data.body.trim();
+
   const note = await db.note.create({
     data: {
       leadId: data.leadId,
-      body: data.body.trim(),
+      body,
     },
+  });
+
+  // Keep Lead.notes as latest note so lead form / lists stay in sync
+  await db.lead.update({
+    where: { id: data.leadId },
+    data: { notes: body },
   });
 
   await db.activity.create({
@@ -91,12 +96,11 @@ export async function addNote(raw: NoteInput) {
       leadId: data.leadId,
       type: "NOTE",
       title: "Note added",
-      body: data.body.trim(),
+      body,
     },
   });
 
-  revalidatePath(`/leads/${data.leadId}`);
-  revalidatePath("/");
+  revalidateCrm(data.leadId);
   return note;
 }
 
@@ -119,10 +123,7 @@ export async function scheduleFollowUp(raw: FollowUpInput) {
   });
 
   if (leadId) {
-    await db.lead.update({
-      where: { id: leadId },
-      data: { nextFollowUp: followUpDate },
-    });
+    await syncLeadNextFollowUp(leadId);
     await db.activity.create({
       data: {
         leadId,
@@ -131,11 +132,9 @@ export async function scheduleFollowUp(raw: FollowUpInput) {
         body: emptyToNull(data.reminder) ?? `Follow-up on ${data.date}`,
       },
     });
-    revalidatePath(`/leads/${leadId}`);
   }
 
-  revalidatePath("/follow-ups");
-  revalidatePath("/");
+  revalidateCrm(leadId);
   return followUp;
 }
 
@@ -144,9 +143,12 @@ export async function toggleFollowUp(id: string, completed: boolean) {
     where: { id },
     data: { completed },
   });
-  revalidatePath("/follow-ups");
-  revalidatePath("/");
-  if (followUp.leadId) revalidatePath(`/leads/${followUp.leadId}`);
+
+  if (followUp.leadId) {
+    await syncLeadNextFollowUp(followUp.leadId);
+  }
+
+  revalidateCrm(followUp.leadId);
   return followUp;
 }
 

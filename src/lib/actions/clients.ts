@@ -1,9 +1,9 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
 import type { WorkStatus } from "@prisma/client";
 import { db } from "@/lib/db";
 import { parseJsonArray, toJsonArray } from "@/lib/constants";
+import { revalidateCrm } from "@/lib/revalidate";
 import {
   clientPaymentSchema,
   type ClientPaymentInput,
@@ -15,6 +15,7 @@ export async function ensureClientForWonLead(leadId: string) {
 
   const services = parseJsonArray(lead.services);
   const agreed = lead.budget ?? 0;
+  const existing = await db.client.findUnique({ where: { leadId } });
 
   return db.client.upsert({
     where: { leadId },
@@ -30,6 +31,10 @@ export async function ensureClientForWonLead(leadId: string) {
     update: {
       company: lead.company,
       services: toJsonArray(services),
+      // Sync budget → agreed only before any payment is recorded
+      ...(existing && existing.amountCollected === 0 && agreed > 0
+        ? { amountAgreed: agreed }
+        : {}),
     },
   });
 }
@@ -55,10 +60,7 @@ export async function updateClientPayment(
     },
   });
 
-  revalidatePath("/");
-  revalidatePath("/clients");
-  revalidatePath("/tracks");
-  revalidatePath(`/leads/${client.leadId}`);
+  revalidateCrm(client.leadId);
   return client;
 }
 
@@ -71,10 +73,7 @@ export async function updateClientWorkStatus(
     data: { workStatus },
   });
 
-  revalidatePath("/");
-  revalidatePath("/clients");
-  revalidatePath("/tracks");
-  revalidatePath(`/leads/${client.leadId}`);
+  revalidateCrm(client.leadId);
   return client;
 }
 

@@ -25,7 +25,13 @@ import { cn } from "@/lib/utils";
 
 type Row = FollowUp & { lead: Lead | null };
 
-export function FollowUpsView({ followUps }: { followUps: Row[] }) {
+export function FollowUpsView({
+  followUps,
+  leads,
+}: {
+  followUps: Row[];
+  leads: { id: string; company: string; contact: string }[];
+}) {
   const [open, setOpen] = useState(false);
   const [filter, setFilter] = useState<"all" | "pending" | "completed">("all");
   const [pending, startTransition] = useTransition();
@@ -190,7 +196,7 @@ export function FollowUpsView({ followUps }: { followUps: Row[] }) {
         </>
       )}
 
-      <ScheduleFollowUpSheet open={open} onOpenChange={setOpen} />
+      <ScheduleFollowUpSheet open={open} onOpenChange={setOpen} leads={leads} />
     </div>
   );
 }

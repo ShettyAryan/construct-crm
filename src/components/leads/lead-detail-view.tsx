@@ -149,11 +149,6 @@ export function LeadDetailView({ lead }: { lead: LeadDetail }) {
                   value={services.length ? services.join(", ") : null}
                 />
               </div>
-              {lead.notes ? (
-                <div className="sm:col-span-2">
-                  <Detail label="Notes" value={lead.notes} />
-                </div>
-              ) : null}
             </dl>
           </section>
 

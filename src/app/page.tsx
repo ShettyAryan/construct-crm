@@ -116,41 +116,31 @@ export default async function DashboardPage() {
           )}
         </Panel>
 
-        <Panel title="Upcoming calls & follow-ups" icon={Phone} href="/calls">
-          {data.upcomingFollowCallLeads.length === 0 &&
-          data.upcomingCalls.length === 0 ? (
+        <Panel title="Upcoming follow-ups" icon={Phone} href="/follow-ups">
+          {data.upcomingFollowUps.length === 0 ? (
             <EmptyState
-              title="No upcoming calls"
+              title="No upcoming follow-ups"
+              description="Nothing scheduled in the next 7 days."
               className="border-0 py-8"
             />
           ) : (
             <ul className="divide-y">
-              {data.upcomingFollowCallLeads.map((lead) => (
-                <li key={lead.id} className="py-2.5">
-                  <Link
-                    href={`/leads/${lead.id}`}
-                    className="text-sm font-medium hover:underline"
-                  >
-                    {lead.company}
-                  </Link>
+              {data.upcomingFollowUps.map((f) => (
+                <li key={f.id} className="py-2.5">
+                  {f.lead ? (
+                    <Link
+                      href={`/leads/${f.lead.id}`}
+                      className="text-sm font-medium hover:underline"
+                    >
+                      {f.lead.company}
+                    </Link>
+                  ) : (
+                    <p className="text-sm font-medium">General</p>
+                  )}
                   <p className="text-xs text-muted-foreground">
-                    {lead.contact}
-                    {lead.nextFollowUp
-                      ? ` · ${formatISTDateTime(lead.nextFollowUp)}`
-                      : ""}
-                  </p>
-                </li>
-              ))}
-              {data.upcomingCalls.map((call) => (
-                <li key={call.id} className="py-2.5">
-                  <Link
-                    href={`/leads/${call.leadId}`}
-                    className="text-sm font-medium hover:underline"
-                  >
-                    {call.lead.company}
-                  </Link>
-                  <p className="text-xs text-muted-foreground">
-                    Logged call · {formatISTShort(call.date)} · {call.summary}
+                    {formatISTDateTime(f.date)}
+                    {f.time ? ` · ${f.time}` : ""}
+                    {f.reminder ? ` · ${f.reminder}` : ""}
                   </p>
                 </li>
               ))}
