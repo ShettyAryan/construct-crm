@@ -1,5 +1,4 @@
 import Link from "next/link";
-import { format } from "date-fns";
 import { PageHeader } from "@/components/shared/page-header";
 import { EmptyState } from "@/components/shared/empty-state";
 import {
@@ -10,6 +9,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { formatISTDate, formatISTShort } from "@/lib/datetime";
 import { getCalls } from "@/lib/actions/activity";
 
 export default async function CallsPage() {
@@ -17,7 +17,10 @@ export default async function CallsPage() {
 
   return (
     <div>
-      <PageHeader title="Calls" description="All logged calls across leads" />
+      <PageHeader
+        title="Calls"
+        description="All logged calls across leads · Times in IST"
+      />
       {calls.length === 0 ? (
         <EmptyState
           title="No calls yet"
@@ -35,7 +38,7 @@ export default async function CallsPage() {
                 <div className="flex items-start justify-between gap-2">
                   <p className="font-medium">{call.lead.company}</p>
                   <span className="shrink-0 text-xs text-muted-foreground">
-                    {format(call.date, "MMM d")}
+                    {formatISTShort(call.date)}
                   </span>
                 </div>
                 <p className="mt-1 text-sm text-muted-foreground line-clamp-2">
@@ -54,7 +57,7 @@ export default async function CallsPage() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Date</TableHead>
+                  <TableHead>Date (IST)</TableHead>
                   <TableHead>Company</TableHead>
                   <TableHead>Duration</TableHead>
                   <TableHead>Outcome</TableHead>
@@ -66,7 +69,7 @@ export default async function CallsPage() {
                 {calls.map((call) => (
                   <TableRow key={call.id}>
                     <TableCell className="whitespace-nowrap text-muted-foreground">
-                      {format(call.date, "MMM d, yyyy")}
+                      {formatISTDate(call.date)}
                     </TableCell>
                     <TableCell>
                       <Link

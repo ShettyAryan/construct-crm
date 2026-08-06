@@ -1,4 +1,3 @@
-import { format } from "date-fns";
 import {
   Bell,
   Calendar,
@@ -8,6 +7,7 @@ import {
 } from "lucide-react";
 import type { Activity, ActivityType } from "@prisma/client";
 import { EmptyState } from "@/components/shared/empty-state";
+import { formatISTDateTime } from "@/lib/datetime";
 import { cn } from "@/lib/utils";
 
 const iconMap: Record<ActivityType, typeof Phone> = {
@@ -30,7 +30,7 @@ export function Timeline({ activities }: { activities: Activity[] }) {
   }
 
   return (
-    <ol className="relative space-y-0 border-l border-border ml-3">
+    <ol className="relative ml-3 space-y-0 border-l border-border">
       {activities.map((activity, i) => {
         const Icon = iconMap[activity.type];
         return (
@@ -47,7 +47,7 @@ export function Timeline({ activities }: { activities: Activity[] }) {
               <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
                 <p className="text-sm font-medium">{activity.title}</p>
                 <time className="text-xs text-muted-foreground">
-                  {format(activity.createdAt, "MMM d, yyyy · h:mm a")}
+                  {formatISTDateTime(activity.createdAt)} IST
                 </time>
               </div>
               {activity.body ? (

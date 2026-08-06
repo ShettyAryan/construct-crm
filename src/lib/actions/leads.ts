@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import type { Agency, LeadStatus, Priority } from "@prisma/client";
 import { db } from "@/lib/db";
 import { toJsonArray } from "@/lib/constants";
+import { parseISTInput } from "@/lib/datetime";
 import { leadSchema, type LeadInput } from "@/lib/validators";
 import { ensureClientForWonLead } from "@/lib/actions/clients";
 
@@ -28,8 +29,8 @@ function mapLeadData(input: LeadInput) {
     priority: input.priority as Priority,
     status: input.status as LeadStatus,
     notes: emptyToNull(input.notes),
-    nextFollowUp: input.nextFollowUp
-      ? new Date(input.nextFollowUp)
+    nextFollowUp: emptyToNull(input.nextFollowUp)
+      ? parseISTInput(input.nextFollowUp!)
       : null,
   };
 }

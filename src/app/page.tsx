@@ -1,5 +1,4 @@
 import Link from "next/link";
-import { format } from "date-fns";
 import {
   Banknote,
   Bell,
@@ -16,6 +15,7 @@ import { EmptyState } from "@/components/shared/empty-state";
 import { PriorityBadge } from "@/components/shared/badges";
 import { getDashboardData } from "@/lib/actions/dashboard";
 import { formatBudget } from "@/lib/constants";
+import { formatISTDateTime, formatISTShort } from "@/lib/datetime";
 
 export default async function DashboardPage() {
   const data = await getDashboardData();
@@ -24,7 +24,7 @@ export default async function DashboardPage() {
     <div>
       <PageHeader
         title="Dashboard"
-        description="Pipeline pulse for ConstructDev & ConstructXR"
+        description="Pipeline pulse for ConstructDev & ConstructXR · Times in IST"
       />
 
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
@@ -136,7 +136,7 @@ export default async function DashboardPage() {
                   <p className="text-xs text-muted-foreground">
                     {lead.contact}
                     {lead.nextFollowUp
-                      ? ` · ${format(lead.nextFollowUp, "MMM d, h:mm a")}`
+                      ? ` · ${formatISTDateTime(lead.nextFollowUp)}`
                       : ""}
                   </p>
                 </li>
@@ -150,7 +150,7 @@ export default async function DashboardPage() {
                     {call.lead.company}
                   </Link>
                   <p className="text-xs text-muted-foreground">
-                    Logged call · {format(call.date, "MMM d")} · {call.summary}
+                    Logged call · {formatISTShort(call.date)} · {call.summary}
                   </p>
                 </li>
               ))}
@@ -173,7 +173,7 @@ export default async function DashboardPage() {
                       {a.lead.company}
                     </Link>
                     <span className="shrink-0 text-[11px] text-muted-foreground">
-                      {format(a.createdAt, "MMM d")}
+                      {formatISTShort(a.createdAt)}
                     </span>
                   </div>
                   <p className="text-xs text-muted-foreground">
@@ -200,7 +200,7 @@ export default async function DashboardPage() {
                     <p className="text-sm font-medium">{t.title}</p>
                     <p className="text-xs text-muted-foreground">
                       {t.dueDate
-                        ? `Due ${format(t.dueDate, "MMM d")}`
+                        ? `Due ${formatISTShort(t.dueDate)}`
                         : "No due date"}
                     </p>
                   </div>

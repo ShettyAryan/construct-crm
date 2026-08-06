@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { format } from "date-fns";
 import { Plus, Trash2 } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -23,6 +22,7 @@ import { EmptyState } from "@/components/shared/empty-state";
 import { PriorityBadge } from "@/components/shared/badges";
 import { AppSelect } from "@/components/shared/app-select";
 import { PRIORITIES } from "@/lib/constants";
+import { formatISTDate, todayISTDateInput } from "@/lib/datetime";
 import { taskSchema, type TaskInput } from "@/lib/validators";
 import { createTask, deleteTask, toggleTask } from "@/lib/actions/tasks";
 import { cn } from "@/lib/utils";
@@ -52,7 +52,7 @@ export function TasksView({ tasks }: { tasks: Task[] }) {
     <div>
       <PageHeader
         title="Tasks"
-        description="Simple personal task list"
+        description="Simple personal task list · Dates in IST"
         actions={
           <Button className="w-full sm:w-auto" onClick={() => setOpen(true)}>
             <Plus className="size-4" />
@@ -107,7 +107,7 @@ export function TasksView({ tasks }: { tasks: Task[] }) {
                 </p>
                 <p className="text-xs text-muted-foreground">
                   {task.dueDate
-                    ? `Due ${format(task.dueDate, "MMM d, yyyy")}`
+                    ? `Due ${formatISTDate(task.dueDate)}`
                     : "No due date"}
                 </p>
               </div>
@@ -146,8 +146,12 @@ export function TasksView({ tasks }: { tasks: Task[] }) {
               <Input {...form.register("title")} />
             </div>
             <div className="grid gap-1.5">
-              <Label>Due date</Label>
-              <Input type="date" {...form.register("dueDate")} />
+              <Label>Due date (IST)</Label>
+              <Input
+                type="date"
+                {...form.register("dueDate")}
+                defaultValue={todayISTDateInput()}
+              />
             </div>
             <div className="grid gap-1.5">
               <Label>Priority</Label>
@@ -164,7 +168,11 @@ export function TasksView({ tasks }: { tasks: Task[] }) {
               />
             </div>
             <DialogFooter>
-              <Button type="button" variant="outline" onClick={() => setOpen(false)}>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setOpen(false)}
+              >
                 Cancel
               </Button>
               <Button type="submit">Create</Button>

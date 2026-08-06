@@ -1,13 +1,11 @@
 "use server";
 
-import { startOfDay, endOfDay, addDays } from "date-fns";
 import { db } from "@/lib/db";
+import { getISTDayBounds } from "@/lib/datetime";
 
 export async function getDashboardData() {
-  const now = new Date();
-  const todayStart = startOfDay(now);
-  const todayEnd = endOfDay(now);
-  const weekEnd = endOfDay(addDays(now, 7));
+  const { start: todayStart, end: todayEnd, endAhead: weekEnd } =
+    getISTDayBounds(7);
 
   const [
     totalLeads,

@@ -1,5 +1,4 @@
 import Link from "next/link";
-import { format } from "date-fns";
 import { PageHeader } from "@/components/shared/page-header";
 import { EmptyState } from "@/components/shared/empty-state";
 import {
@@ -10,6 +9,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { formatISTDate, formatISTShort } from "@/lib/datetime";
 import { getMeetings } from "@/lib/actions/activity";
 
 export default async function MeetingsPage() {
@@ -19,7 +19,7 @@ export default async function MeetingsPage() {
     <div>
       <PageHeader
         title="Meetings"
-        description="Discovery notes and next steps"
+        description="Discovery notes and next steps · Times in IST"
       />
       {meetings.length === 0 ? (
         <EmptyState
@@ -38,7 +38,7 @@ export default async function MeetingsPage() {
                 <div className="flex items-start justify-between gap-2">
                   <p className="font-medium">{m.lead.company}</p>
                   <span className="shrink-0 text-xs text-muted-foreground">
-                    {format(m.date, "MMM d")}
+                    {formatISTShort(m.date)}
                   </span>
                 </div>
                 <p className="mt-1 text-sm line-clamp-2">{m.summary}</p>
@@ -55,7 +55,7 @@ export default async function MeetingsPage() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Date</TableHead>
+                  <TableHead>Date (IST)</TableHead>
                   <TableHead>Company</TableHead>
                   <TableHead>Summary</TableHead>
                   <TableHead>Pain points</TableHead>
@@ -66,7 +66,7 @@ export default async function MeetingsPage() {
                 {meetings.map((m) => (
                   <TableRow key={m.id}>
                     <TableCell className="whitespace-nowrap text-muted-foreground">
-                      {format(m.date, "MMM d, yyyy")}
+                      {formatISTDate(m.date)}
                     </TableCell>
                     <TableCell>
                       <Link

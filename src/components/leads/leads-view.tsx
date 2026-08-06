@@ -2,7 +2,6 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
-import { format } from "date-fns";
 import { Plus } from "lucide-react";
 import type { Lead } from "@prisma/client";
 import { Button } from "@/components/ui/button";
@@ -23,6 +22,7 @@ import {
   StatusBadge,
 } from "@/components/shared/badges";
 import { LeadFormDialog } from "@/components/leads/lead-form-dialog";
+import { formatISTDate, formatISTShort } from "@/lib/datetime";
 import {
   AGENCIES,
   LEAD_STATUSES,
@@ -147,7 +147,7 @@ export function LeadsView({ leads }: { leads: Lead[] }) {
                   <span>{formatBudget(lead.budget)}</span>
                   <span>
                     {lead.nextFollowUp
-                      ? format(lead.nextFollowUp, "MMM d")
+                      ? formatISTShort(lead.nextFollowUp)
                       : "No follow-up"}
                   </span>
                 </div>
@@ -201,7 +201,7 @@ export function LeadsView({ leads }: { leads: Lead[] }) {
                     <TableCell>{formatBudget(lead.budget)}</TableCell>
                     <TableCell className="text-muted-foreground">
                       {lead.nextFollowUp
-                        ? format(lead.nextFollowUp, "MMM d, yyyy")
+                        ? formatISTDate(lead.nextFollowUp)
                         : "—"}
                     </TableCell>
                   </TableRow>

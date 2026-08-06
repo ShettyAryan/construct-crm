@@ -17,6 +17,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { AppSelect } from "@/components/shared/app-select";
 import { PRIORITIES } from "@/lib/constants";
+import { todayISTDateInput } from "@/lib/datetime";
 import { followUpSchema, type FollowUpInput } from "@/lib/validators";
 import { scheduleFollowUp } from "@/lib/actions/activity";
 
@@ -36,7 +37,7 @@ export function ScheduleFollowUpSheet({
     resolver: zodResolver(followUpSchema),
     defaultValues: {
       leadId: leadId ?? "",
-      date: new Date().toISOString().slice(0, 10),
+      date: todayISTDateInput(),
       time: "10:00",
       priority: "Medium",
       reminder: "",
@@ -51,7 +52,7 @@ export function ScheduleFollowUpSheet({
       onOpenChange(false);
       form.reset({
         leadId: leadId ?? "",
-        date: new Date().toISOString().slice(0, 10),
+        date: todayISTDateInput(),
         time: "10:00",
         priority: "Medium",
         reminder: "",
@@ -69,13 +70,16 @@ export function ScheduleFollowUpSheet({
         <SheetHeader>
           <SheetTitle>Schedule follow-up</SheetTitle>
         </SheetHeader>
-        <form onSubmit={onSubmit} className="mt-0 flex flex-1 flex-col gap-4 overflow-y-auto px-4 pb-4">
+        <form
+          onSubmit={onSubmit}
+          className="mt-0 flex flex-1 flex-col gap-4 overflow-y-auto px-4 pb-4"
+        >
           <div className="grid gap-1.5">
-            <Label>Date</Label>
+            <Label>Date (IST)</Label>
             <Input type="date" {...form.register("date")} />
           </div>
           <div className="grid gap-1.5">
-            <Label>Time</Label>
+            <Label>Time (IST)</Label>
             <Input type="time" {...form.register("time")} />
           </div>
           <div className="grid gap-1.5">
@@ -97,7 +101,11 @@ export function ScheduleFollowUpSheet({
             <Textarea rows={3} {...form.register("reminder")} />
           </div>
           <SheetFooter className="mt-auto">
-            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => onOpenChange(false)}
+            >
               Cancel
             </Button>
             <Button type="submit" disabled={saving}>

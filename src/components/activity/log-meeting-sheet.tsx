@@ -16,6 +16,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { meetingSchema, type MeetingInput } from "@/lib/validators";
+import { nowISTDateTimeInput } from "@/lib/datetime";
 import { logMeeting } from "@/lib/actions/activity";
 
 export function LogMeetingSheet({
@@ -32,7 +33,7 @@ export function LogMeetingSheet({
     resolver: zodResolver(meetingSchema),
     defaultValues: {
       leadId,
-      date: new Date().toISOString().slice(0, 16),
+      date: nowISTDateTimeInput(),
       summary: "",
       painPoints: "",
       requirements: "",
@@ -48,7 +49,7 @@ export function LogMeetingSheet({
       onOpenChange(false);
       form.reset({
         leadId,
-        date: new Date().toISOString().slice(0, 16),
+        date: nowISTDateTimeInput(),
         summary: "",
         painPoints: "",
         requirements: "",
@@ -69,7 +70,7 @@ export function LogMeetingSheet({
         </SheetHeader>
         <form onSubmit={onSubmit} className="mt-0 flex flex-1 flex-col gap-4 overflow-y-auto px-4 pb-4">
           <div className="grid gap-1.5">
-            <Label>Date & time</Label>
+            <Label>Date & time (IST)</Label>
             <Input type="datetime-local" {...form.register("date")} />
           </div>
           <div className="grid gap-1.5">

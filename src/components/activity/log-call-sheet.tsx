@@ -16,6 +16,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { callSchema, type CallInput } from "@/lib/validators";
+import { nowISTDateTimeInput } from "@/lib/datetime";
 import { logCall } from "@/lib/actions/activity";
 
 export function LogCallSheet({
@@ -32,7 +33,7 @@ export function LogCallSheet({
     resolver: zodResolver(callSchema),
     defaultValues: {
       leadId,
-      date: new Date().toISOString().slice(0, 16),
+      date: nowISTDateTimeInput(),
       durationMin: 15,
       outcome: "",
       summary: "",
@@ -48,7 +49,7 @@ export function LogCallSheet({
       onOpenChange(false);
       form.reset({
         leadId,
-        date: new Date().toISOString().slice(0, 16),
+        date: nowISTDateTimeInput(),
         durationMin: 15,
         outcome: "",
         summary: "",
@@ -69,7 +70,7 @@ export function LogCallSheet({
         </SheetHeader>
         <form onSubmit={onSubmit} className="mt-0 flex flex-1 flex-col gap-4 overflow-y-auto px-4 pb-4">
           <div className="grid gap-1.5">
-            <Label>Date & time</Label>
+            <Label>Date & time (IST)</Label>
             <Input type="datetime-local" {...form.register("date")} />
           </div>
           <div className="grid gap-1.5">

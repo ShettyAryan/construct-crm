@@ -1,6 +1,5 @@
 import Link from "next/link";
-import { format } from "date-fns";
-import { ExternalLink } from "lucide-react";
+import { ExternalLink, Phone, StickyNote, Bell, Calendar } from "lucide-react";
 import type {
   Activity,
   Call,
@@ -17,9 +16,9 @@ import {
   StatusBadge,
 } from "@/components/shared/badges";
 import { formatBudget, parseJsonArray } from "@/lib/constants";
+import { formatISTDate, formatISTShort } from "@/lib/datetime";
 import { LeadDetailActions } from "@/components/leads/lead-detail-actions";
 import { Timeline } from "@/components/activity/timeline";
-import { Phone, StickyNote, Bell, Calendar } from "lucide-react";
 
 type LeadDetail = Lead & {
   calls: Call[];
@@ -138,9 +137,9 @@ export function LeadDetailView({ lead }: { lead: LeadDetail }) {
               <Detail label="Budget" value={formatBudget(lead.budget)} />
               <Detail
                 label="Next follow-up"
-                value={
+                  value={
                   lead.nextFollowUp
-                    ? format(lead.nextFollowUp, "MMM d, yyyy")
+                    ? formatISTDate(lead.nextFollowUp)
                     : null
                 }
               />
@@ -171,7 +170,7 @@ export function LeadDetailView({ lead }: { lead: LeadDetail }) {
             empty="No calls logged"
             items={lead.calls.map((c) => ({
               id: c.id,
-              title: format(c.date, "MMM d"),
+              title: formatISTShort(c.date),
               body: c.summary,
             }))}
           />
@@ -181,7 +180,7 @@ export function LeadDetailView({ lead }: { lead: LeadDetail }) {
             empty="No meetings"
             items={lead.meetings.map((m) => ({
               id: m.id,
-              title: format(m.date, "MMM d"),
+              title: formatISTShort(m.date),
               body: m.summary,
             }))}
           />
@@ -191,7 +190,7 @@ export function LeadDetailView({ lead }: { lead: LeadDetail }) {
             empty="No follow-ups"
             items={lead.followUps.map((f) => ({
               id: f.id,
-              title: `${format(f.date, "MMM d")}${f.time ? ` · ${f.time}` : ""}${f.completed ? " ✓" : ""}`,
+              title: `${formatISTShort(f.date)}${f.time ? ` · ${f.time}` : ""}${f.completed ? " ✓" : ""}`,
               body: f.reminder ?? "Follow-up",
             }))}
           />
@@ -201,7 +200,7 @@ export function LeadDetailView({ lead }: { lead: LeadDetail }) {
             empty="No notes"
             items={lead.notesList.map((n) => ({
               id: n.id,
-              title: format(n.createdAt, "MMM d"),
+              title: formatISTShort(n.createdAt),
               body: n.body,
             }))}
           />

@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import type { Priority } from "@prisma/client";
 import { db } from "@/lib/db";
+import { parseISTInput } from "@/lib/datetime";
 import {
   callSchema,
   followUpSchema,
@@ -23,7 +24,7 @@ export async function logCall(raw: CallInput) {
   const call = await db.call.create({
     data: {
       leadId: data.leadId,
-      date: new Date(data.date),
+      date: parseISTInput(data.date),
       durationMin: data.durationMin ?? null,
       outcome: emptyToNull(data.outcome),
       summary: data.summary.trim(),
@@ -53,7 +54,7 @@ export async function logMeeting(raw: MeetingInput) {
   const meeting = await db.meeting.create({
     data: {
       leadId: data.leadId,
-      date: new Date(data.date),
+      date: parseISTInput(data.date),
       summary: data.summary.trim(),
       painPoints: emptyToNull(data.painPoints),
       requirements: emptyToNull(data.requirements),
@@ -103,10 +104,14 @@ export async function scheduleFollowUp(raw: FollowUpInput) {
   const data = followUpSchema.parse(raw);
   const leadId = emptyToNull(data.leadId);
 
+  const followUpDate = parseISTInput(
+    data.time ? `${data.date}T${data.time}` : data.date
+  );
+
   const followUp = await db.followUp.create({
     data: {
       leadId,
-      date: new Date(data.date),
+      date: followUpDate,
       time: emptyToNull(data.time),
       priority: data.priority as Priority,
       reminder: emptyToNull(data.reminder),
@@ -116,7 +121,7 @@ export async function scheduleFollowUp(raw: FollowUpInput) {
   if (leadId) {
     await db.lead.update({
       where: { id: leadId },
-      data: { nextFollowUp: new Date(data.date) },
+      data: { nextFollowUp: followUpDate },
     });
     await db.activity.create({
       data: {

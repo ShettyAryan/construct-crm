@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import type { Priority } from "@prisma/client";
 import { db } from "@/lib/db";
+import { parseISTInput } from "@/lib/datetime";
 import { taskSchema, type TaskInput } from "@/lib/validators";
 
 function emptyToNull(v?: string | null) {
@@ -20,7 +21,7 @@ export async function createTask(raw: TaskInput) {
   const task = await db.task.create({
     data: {
       title: data.title.trim(),
-      dueDate: emptyToNull(data.dueDate) ? new Date(data.dueDate!) : null,
+      dueDate: emptyToNull(data.dueDate) ? parseISTInput(data.dueDate!) : null,
       priority: data.priority as Priority,
     },
   });

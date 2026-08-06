@@ -2,7 +2,6 @@
 
 import { useEffect, useMemo, useState, useTransition } from "react";
 import Link from "next/link";
-import { format } from "date-fns";
 import {
   DndContext,
   DragOverlay,
@@ -10,6 +9,7 @@ import {
   closestCorners,
   useSensor,
   useSensors,
+  useDroppable,
   type DragEndEvent,
   type DragStartEvent,
 } from "@dnd-kit/core";
@@ -19,10 +19,10 @@ import {
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { useDroppable } from "@dnd-kit/core";
 import type { Lead, LeadStatus } from "@prisma/client";
 import { toast } from "sonner";
 import { PriorityBadge } from "@/components/shared/badges";
+import { formatISTShort } from "@/lib/datetime";
 import {
   PIPELINE_STATUSES,
   STATUS_LABELS,
@@ -218,7 +218,7 @@ function KanbanCard({ lead, overlay }: { lead: Lead; overlay?: boolean }) {
       </div>
       {lead.nextFollowUp ? (
         <p className="mt-2 text-[11px] text-muted-foreground">
-          Follow-up {format(lead.nextFollowUp, "MMM d")}
+          Follow-up {formatISTShort(lead.nextFollowUp)}
         </p>
       ) : null}
     </div>

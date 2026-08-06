@@ -28,6 +28,7 @@ import {
 } from "@/lib/constants";
 import { leadSchema, type LeadInput } from "@/lib/validators";
 import { createLead, updateLead } from "@/lib/actions/leads";
+import { toISTDateInput } from "@/lib/datetime";
 import { cn } from "@/lib/utils";
 
 const NONE = "__none__";
@@ -80,9 +81,7 @@ function toDefaultValues(lead?: Lead): LeadInput {
     priority: lead.priority,
     status: lead.status,
     notes: lead.notes ?? "",
-    nextFollowUp: lead.nextFollowUp
-      ? lead.nextFollowUp.toISOString().slice(0, 10)
-      : "",
+    nextFollowUp: lead.nextFollowUp ? toISTDateInput(lead.nextFollowUp) : "",
   };
 }
 
@@ -189,7 +188,7 @@ export function LeadFormDialog({
             <Field label="Budget (INR)">
               <Input type="number" {...form.register("budget")} />
             </Field>
-            <Field label="Next follow-up">
+            <Field label="Next follow-up (IST)">
               <Input type="date" {...form.register("nextFollowUp")} />
             </Field>
             <Field label="Priority">

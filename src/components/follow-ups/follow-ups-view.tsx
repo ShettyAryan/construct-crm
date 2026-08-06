@@ -2,7 +2,6 @@
 
 import { useState, useTransition } from "react";
 import Link from "next/link";
-import { format } from "date-fns";
 import { Plus } from "lucide-react";
 import type { FollowUp, Lead } from "@prisma/client";
 import { toast } from "sonner";
@@ -12,6 +11,7 @@ import { PageHeader } from "@/components/shared/page-header";
 import { EmptyState } from "@/components/shared/empty-state";
 import { PriorityBadge } from "@/components/shared/badges";
 import { ScheduleFollowUpSheet } from "@/components/activity/schedule-follow-up-sheet";
+import { formatISTDate } from "@/lib/datetime";
 import { toggleFollowUp } from "@/lib/actions/activity";
 import {
   Table,
@@ -50,7 +50,7 @@ export function FollowUpsView({ followUps }: { followUps: Row[] }) {
     <div>
       <PageHeader
         title="Follow-ups"
-        description="Reminders and next touches"
+        description="Reminders and next touches · Times in IST"
         actions={
           <Button className="w-full sm:w-auto" onClick={() => setOpen(true)}>
             <Plus className="size-4" />
@@ -115,13 +115,15 @@ export function FollowUpsView({ followUps }: { followUps: Row[] }) {
                         <p className="font-medium">General</p>
                       )}
                       <p className="mt-0.5 text-xs text-muted-foreground">
-                        {format(f.date, "MMM d, yyyy")}
+                        {formatISTDate(f.date)}
                         {f.time ? ` · ${f.time}` : ""}
                       </p>
                     </div>
                     <PriorityBadge priority={f.priority} />
                   </div>
-                  <p className="mt-2 text-sm break-words">{f.reminder ?? "Follow-up"}</p>
+                  <p className="mt-2 text-sm break-words">
+                    {f.reminder ?? "Follow-up"}
+                  </p>
                   <p className="mt-1 text-xs text-muted-foreground">
                     {f.completed ? "Completed" : "Pending"}
                   </p>
@@ -135,7 +137,7 @@ export function FollowUpsView({ followUps }: { followUps: Row[] }) {
               <TableHeader>
                 <TableRow>
                   <TableHead className="w-10" />
-                  <TableHead>Date</TableHead>
+                  <TableHead>Date (IST)</TableHead>
                   <TableHead>Lead</TableHead>
                   <TableHead>Reminder</TableHead>
                   <TableHead>Priority</TableHead>
@@ -144,7 +146,10 @@ export function FollowUpsView({ followUps }: { followUps: Row[] }) {
               </TableHeader>
               <TableBody>
                 {filtered.map((f) => (
-                  <TableRow key={f.id} className={f.completed ? "opacity-60" : ""}>
+                  <TableRow
+                    key={f.id}
+                    className={f.completed ? "opacity-60" : ""}
+                  >
                     <TableCell>
                       <Checkbox
                         checked={f.completed}
@@ -155,7 +160,7 @@ export function FollowUpsView({ followUps }: { followUps: Row[] }) {
                       />
                     </TableCell>
                     <TableCell className="whitespace-nowrap text-muted-foreground">
-                      {format(f.date, "MMM d, yyyy")}
+                      {formatISTDate(f.date)}
                       {f.time ? ` · ${f.time}` : ""}
                     </TableCell>
                     <TableCell>
