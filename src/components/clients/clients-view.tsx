@@ -24,9 +24,12 @@ import {
 } from "@/components/ui/table";
 import { PageHeader } from "@/components/shared/page-header";
 import { EmptyState } from "@/components/shared/empty-state";
-import { AgencyBadge } from "@/components/shared/badges";
+import { AgencyBadge, WorkStatusBadge } from "@/components/shared/badges";
 import { formatBudget, parseJsonArray } from "@/lib/constants";
-import { updateClientPayment } from "@/lib/actions/clients";
+import {
+  updateClientPayment,
+  updateClientWorkStatus,
+} from "@/lib/actions/clients";
 
 type ClientRow = Client & { lead: Lead };
 
@@ -79,7 +82,7 @@ export function ClientsView({ clients }: { clients: ClientRow[] }) {
     <div>
       <PageHeader
         title="Clients"
-        description="Won deals — track agreed and collected amounts"
+        description="Won deals — payments and work track (ongoing / completed)"
       />
       {clients.length === 0 ? (
         <EmptyState
@@ -107,7 +110,10 @@ export function ClientsView({ clients }: { clients: ClientRow[] }) {
                     >
                       {client.company}
                     </Link>
-                    <AgencyBadge agency={client.lead.agency} />
+                    <div className="flex flex-col items-end gap-1">
+                      <AgencyBadge agency={client.lead.agency} />
+                      <WorkStatusBadge status={client.workStatus} />
+                    </div>
                   </div>
                   <div className="mt-3 grid grid-cols-2 gap-2 text-sm">
                     <div>
@@ -130,14 +136,39 @@ export function ClientsView({ clients }: { clients: ClientRow[] }) {
                   <p className="mt-2 text-xs text-muted-foreground line-clamp-1">
                     {projects.join(", ") || "No projects"}
                   </p>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="mt-3 w-full"
-                    onClick={() => openEdit(client)}
-                  >
-                    Update payment
-                  </Button>
+                  <div className="mt-3 grid grid-cols-2 gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => openEdit(client)}
+                    >
+                      Payment
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      disabled={pending}
+                      onClick={() => {
+                        startTransition(async () => {
+                          try {
+                            await updateClientWorkStatus(
+                              client.id,
+                              client.workStatus === "Ongoing"
+                                ? "Completed"
+                                : "Ongoing"
+                            );
+                            toast.success("Work status updated");
+                          } catch {
+                            toast.error("Failed to update status");
+                          }
+                        });
+                      }}
+                    >
+                      {client.workStatus === "Ongoing"
+                        ? "Complete"
+                        : "Reopen"}
+                    </Button>
+                  </div>
                 </div>
               );
             })}
@@ -149,6 +180,7 @@ export function ClientsView({ clients }: { clients: ClientRow[] }) {
                 <TableRow>
                   <TableHead>Company</TableHead>
                   <TableHead>Agency</TableHead>
+                  <TableHead>Work</TableHead>
                   <TableHead>Agreed</TableHead>
                   <TableHead>Collected</TableHead>
                   <TableHead>Outstanding</TableHead>
@@ -176,6 +208,9 @@ export function ClientsView({ clients }: { clients: ClientRow[] }) {
                       <TableCell>
                         <AgencyBadge agency={client.lead.agency} />
                       </TableCell>
+                      <TableCell>
+                        <WorkStatusBadge status={client.workStatus} />
+                      </TableCell>
                       <TableCell>{formatBudget(client.amountAgreed)}</TableCell>
                       <TableCell>
                         {formatBudget(client.amountCollected)}
@@ -187,13 +222,39 @@ export function ClientsView({ clients }: { clients: ClientRow[] }) {
                         {projects.join(", ") || "—"}
                       </TableCell>
                       <TableCell>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => openEdit(client)}
-                        >
-                          Update
-                        </Button>
+                        <div className="flex gap-1.5">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => openEdit(client)}
+                          >
+                            Payment
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            disabled={pending}
+                            onClick={() => {
+                              startTransition(async () => {
+                                try {
+                                  await updateClientWorkStatus(
+                                    client.id,
+                                    client.workStatus === "Ongoing"
+                                      ? "Completed"
+                                      : "Ongoing"
+                                  );
+                                  toast.success("Work status updated");
+                                } catch {
+                                  toast.error("Failed to update status");
+                                }
+                              });
+                            }}
+                          >
+                            {client.workStatus === "Ongoing"
+                              ? "Complete"
+                              : "Reopen"}
+                          </Button>
+                        </div>
                       </TableCell>
                     </TableRow>
                   );

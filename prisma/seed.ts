@@ -498,6 +498,7 @@ async function main() {
         projects: JSON.stringify(["Investor Portal Rebuild"]),
         amountAgreed: 1500000,
         amountCollected: 750000,
+        workStatus: "Ongoing",
         services: JSON.stringify(["Web Development", "Consulting"]),
       },
       {
@@ -506,6 +507,7 @@ async function main() {
         projects: JSON.stringify(["Showroom AR Configurator"]),
         amountAgreed: 1100000,
         amountCollected: 1100000,
+        workStatus: "Completed",
         services: JSON.stringify(["AR Product Demo", "XR / VR Experience"]),
       },
     ],

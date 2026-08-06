@@ -37,6 +37,11 @@ enum ActivityType {
   STATUS_CHANGE
 }
 
+enum WorkStatus {
+  Ongoing
+  Completed
+}
+
 model Lead {
   id          String     @id @default(cuid())
   company     String
@@ -131,14 +136,15 @@ model Task {
 }
 
 model Client {
-  id              String   @id @default(cuid())
+  id              String     @id @default(cuid())
   company         String
-  projects        String   @default("[]") // JSON array
-  amountAgreed    Int      @default(0)
-  amountCollected Int      @default(0)
-  services        String   @default("[]") // JSON array
-  leadId          String   @unique
-  lead            Lead     @relation(fields: [leadId], references: [id], onDelete: Cascade)
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  projects        String     @default("[]") // JSON array
+  amountAgreed    Int        @default(0)
+  amountCollected Int        @default(0)
+  workStatus      WorkStatus @default(Ongoing)
+  services        String     @default("[]") // JSON array
+  leadId          String     @unique
+  lead            Lead       @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  createdAt       DateTime   @default(now())
+  updatedAt       DateTime   @updatedAt
 }

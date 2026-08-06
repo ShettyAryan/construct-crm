@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import type { WorkStatus } from "@prisma/client";
 import { db } from "@/lib/db";
 import { parseJsonArray, toJsonArray } from "@/lib/constants";
 import {
@@ -22,13 +23,13 @@ export async function ensureClientForWonLead(leadId: string) {
       company: lead.company,
       amountAgreed: agreed,
       amountCollected: 0,
+      workStatus: "Ongoing",
       services: toJsonArray(services),
       projects: toJsonArray([`${lead.company} Engagement`]),
     },
     update: {
       company: lead.company,
       services: toJsonArray(services),
-      // Keep existing payment figures — edit them on Clients page
     },
   });
 }
@@ -56,6 +57,44 @@ export async function updateClientPayment(
 
   revalidatePath("/");
   revalidatePath("/clients");
+  revalidatePath("/tracks");
   revalidatePath(`/leads/${client.leadId}`);
   return client;
+}
+
+export async function updateClientWorkStatus(
+  clientId: string,
+  workStatus: WorkStatus
+) {
+  const client = await db.client.update({
+    where: { id: clientId },
+    data: { workStatus },
+  });
+
+  revalidatePath("/");
+  revalidatePath("/clients");
+  revalidatePath("/tracks");
+  revalidatePath(`/leads/${client.leadId}`);
+  return client;
+}
+
+export async function getTracksData() {
+  const [activeLeads, ongoingClients, completedClients] = await Promise.all([
+    db.lead.findMany({
+      where: { status: { notIn: ["Won", "Lost"] } },
+      orderBy: [{ priority: "desc" }, { updatedAt: "desc" }],
+    }),
+    db.client.findMany({
+      where: { workStatus: "Ongoing" },
+      include: { lead: true },
+      orderBy: { updatedAt: "desc" },
+    }),
+    db.client.findMany({
+      where: { workStatus: "Completed" },
+      include: { lead: true },
+      orderBy: { updatedAt: "desc" },
+    }),
+  ]);
+
+  return { activeLeads, ongoingClients, completedClients };
 }

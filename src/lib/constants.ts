@@ -1,4 +1,4 @@
-import type { Agency, LeadStatus, Priority } from "@prisma/client";
+import type { Agency, LeadStatus, Priority, WorkStatus } from "@prisma/client";
 
 export const AGENCIES: Agency[] = ["ConstructDev", "ConstructXR"];
 
@@ -15,6 +15,8 @@ export const LEAD_STATUSES: LeadStatus[] = [
 export const PIPELINE_STATUSES: LeadStatus[] = LEAD_STATUSES;
 
 export const PRIORITIES: Priority[] = ["Low", "Medium", "High", "Hot"];
+
+export const WORK_STATUSES: WorkStatus[] = ["Ongoing", "Completed"];
 
 export const SERVICE_OPTIONS = [
   "Web Development",
@@ -52,6 +54,11 @@ export const PRIORITY_LABELS: Record<Priority, string> = {
   Medium: "Medium",
   High: "High",
   Hot: "Hot",
+};
+
+export const WORK_STATUS_LABELS: Record<WorkStatus, string> = {
+  Ongoing: "Ongoing",
+  Completed: "Completed",
 };
 
 export const NAV_ITEMS = [

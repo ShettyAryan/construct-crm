@@ -11,6 +11,7 @@ import {
   LayoutDashboard,
   Menu,
   Phone,
+  Route,
   Users,
   X,
 } from "lucide-react";
@@ -24,6 +25,7 @@ const icons = {
   LayoutDashboard,
   Users,
   Kanban,
+  Route,
   Phone,
   Calendar,
   Bell,
@@ -35,6 +37,7 @@ const nav = [
   { href: "/", label: "Dashboard", icon: "LayoutDashboard" as const },
   { href: "/leads", label: "Leads", icon: "Users" as const },
   { href: "/pipeline", label: "Pipeline", icon: "Kanban" as const },
+  { href: "/tracks", label: "Tracks", icon: "Route" as const },
   { href: "/calls", label: "Calls", icon: "Phone" as const },
   { href: "/meetings", label: "Meetings", icon: "Calendar" as const },
   { href: "/follow-ups", label: "Follow-ups", icon: "Bell" as const },
@@ -45,7 +48,7 @@ const nav = [
 const bottomNav = [
   { href: "/", label: "Home", icon: LayoutDashboard },
   { href: "/leads", label: "Leads", icon: Users },
-  { href: "/pipeline", label: "Pipeline", icon: Kanban },
+  { href: "/tracks", label: "Tracks", icon: Route },
   { href: "/follow-ups", label: "Follow-ups", icon: Bell },
 ] as const;
 

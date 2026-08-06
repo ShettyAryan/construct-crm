@@ -1,7 +1,11 @@
-import type { Priority, LeadStatus } from "@prisma/client";
+import type { Priority, LeadStatus, WorkStatus } from "@prisma/client";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
-import { PRIORITY_LABELS, STATUS_LABELS } from "@/lib/constants";
+import {
+  PRIORITY_LABELS,
+  STATUS_LABELS,
+  WORK_STATUS_LABELS,
+} from "@/lib/constants";
 
 const priorityClass: Record<Priority, string> = {
   Low: "bg-muted text-muted-foreground",
@@ -18,6 +22,11 @@ const statusClass: Record<LeadStatus, string> = {
   Negotiation: "bg-amber-500/15 text-amber-700 dark:text-amber-400",
   Won: "bg-emerald-500/15 text-emerald-700 dark:text-emerald-400",
   Lost: "bg-muted text-muted-foreground",
+};
+
+const workStatusClass: Record<WorkStatus, string> = {
+  Ongoing: "bg-sky-500/15 text-sky-700 dark:text-sky-400",
+  Completed: "bg-emerald-500/15 text-emerald-700 dark:text-emerald-400",
 };
 
 export function PriorityBadge({ priority }: { priority: Priority }) {
@@ -38,6 +47,17 @@ export function StatusBadge({ status }: { status: LeadStatus }) {
       className={cn("border-0 font-medium", statusClass[status])}
     >
       {STATUS_LABELS[status]}
+    </Badge>
+  );
+}
+
+export function WorkStatusBadge({ status }: { status: WorkStatus }) {
+  return (
+    <Badge
+      variant="secondary"
+      className={cn("border-0 font-medium", workStatusClass[status])}
+    >
+      {WORK_STATUS_LABELS[status]}
     </Badge>
   );
 }
