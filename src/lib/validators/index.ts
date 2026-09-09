@@ -1,31 +1,50 @@
 import { z } from "zod";
 
-export const leadSchema = z.object({
-  company: z.string().min(1, "Company is required"),
-  contact: z.string().min(1, "Contact is required"),
-  phone: z.string().optional().or(z.literal("")),
+export const pocSchema = z.object({
+  name: z.string().min(1, "Name is required"),
   email: z.string().email("Invalid email").optional().or(z.literal("")),
-  website: z.string().optional().or(z.literal("")),
+  phone: z.string().optional().or(z.literal("")),
+  role: z.string().optional().or(z.literal("")),
   linkedin: z.string().optional().or(z.literal("")),
-  industry: z.string().optional().or(z.literal("")),
-  city: z.string().optional().or(z.literal("")),
-  agency: z.enum(["ConstructDev", "ConstructXR"]),
-  services: z.array(z.string()),
-  budget: z.coerce.number().int().nonnegative().optional().nullable(),
-  source: z.string().optional().or(z.literal("")),
-  priority: z.enum(["Low", "Medium", "High", "Hot"]),
-  status: z.enum([
-    "New",
-    "Qualified",
-    "Discovery",
-    "ProposalSent",
-    "Negotiation",
-    "Won",
-    "Lost",
-  ]),
-  notes: z.string().optional().or(z.literal("")),
-  nextFollowUp: z.string().optional().or(z.literal("")),
+  isPrimary: z.boolean(),
 });
+
+export type PocInput = z.infer<typeof pocSchema>;
+
+export const leadSchema = z
+  .object({
+    company: z.string().min(1, "Company is required"),
+    website: z.string().optional().or(z.literal("")),
+    linkedin: z.string().optional().or(z.literal("")),
+    industry: z.string().optional().or(z.literal("")),
+    city: z.string().optional().or(z.literal("")),
+    agency: z.enum(["ConstructDev", "ConstructXR"]),
+    services: z.array(z.string()),
+    budget: z.coerce.number().int().nonnegative().optional().nullable(),
+    source: z.string().optional().or(z.literal("")),
+    priority: z.enum(["Low", "Medium", "High", "Hot"]),
+    status: z.enum([
+      "New",
+      "Qualified",
+      "Discovery",
+      "ProposalSent",
+      "Negotiation",
+      "Won",
+      "Lost",
+    ]),
+    notes: z.string().optional().or(z.literal("")),
+    nextFollowUp: z.string().optional().or(z.literal("")),
+    pocs: z.array(pocSchema).min(1, "Add at least one POC"),
+  })
+  .superRefine((data, ctx) => {
+    if (!data.pocs.some((p) => p.name.trim())) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Add at least one POC",
+        path: ["pocs"],
+      });
+    }
+  });
 
 export type LeadInput = z.infer<typeof leadSchema>;
 

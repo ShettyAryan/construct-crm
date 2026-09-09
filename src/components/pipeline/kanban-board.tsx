@@ -19,7 +19,7 @@ import {
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import type { Lead, LeadStatus } from "@prisma/client";
+import type { Lead, LeadStatus, Poc } from "@prisma/client";
 import { toast } from "sonner";
 import { PriorityBadge } from "@/components/shared/badges";
 import { formatISTShort } from "@/lib/datetime";
@@ -29,9 +29,12 @@ import {
   formatBudget,
 } from "@/lib/constants";
 import { updateLeadStatus } from "@/lib/actions/leads";
+import { formatPocName } from "@/lib/poc";
 import { cn } from "@/lib/utils";
 
-export function KanbanBoard({ leads }: { leads: Lead[] }) {
+type LeadCard = Lead & { pocs: Poc[] };
+
+export function KanbanBoard({ leads }: { leads: LeadCard[] }) {
   const [items, setItems] = useState(leads);
   const [activeId, setActiveId] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
@@ -46,8 +49,8 @@ export function KanbanBoard({ leads }: { leads: Lead[] }) {
 
   const columns = useMemo(() => {
     const map = Object.fromEntries(
-      PIPELINE_STATUSES.map((s) => [s, [] as Lead[]])
-    ) as Record<LeadStatus, Lead[]>;
+      PIPELINE_STATUSES.map((s) => [s, [] as LeadCard[]])
+    ) as Record<LeadStatus, LeadCard[]>;
     for (const lead of items) {
       map[lead.status].push(lead);
     }
@@ -132,7 +135,7 @@ function KanbanColumn({
   leads,
 }: {
   status: LeadStatus;
-  leads: Lead[];
+  leads: LeadCard[];
 }) {
   const { setNodeRef, isOver } = useDroppable({ id: status });
 
@@ -165,7 +168,7 @@ function KanbanColumn({
   );
 }
 
-function SortableKanbanCard({ lead }: { lead: Lead }) {
+function SortableKanbanCard({ lead }: { lead: LeadCard }) {
   const {
     attributes,
     listeners,
@@ -193,7 +196,7 @@ function SortableKanbanCard({ lead }: { lead: Lead }) {
   );
 }
 
-function KanbanCard({ lead, overlay }: { lead: Lead; overlay?: boolean }) {
+function KanbanCard({ lead, overlay }: { lead: LeadCard; overlay?: boolean }) {
   return (
     <div
       className={cn(
@@ -209,7 +212,9 @@ function KanbanCard({ lead, overlay }: { lead: Lead; overlay?: boolean }) {
       >
         {lead.company}
       </Link>
-      <p className="mt-0.5 text-xs text-muted-foreground">{lead.contact}</p>
+      <p className="mt-0.5 text-xs text-muted-foreground">
+        {formatPocName(lead.pocs)}
+      </p>
       <div className="mt-2 flex flex-wrap items-center gap-1.5">
         <PriorityBadge priority={lead.priority} />
         <span className="text-xs text-muted-foreground">

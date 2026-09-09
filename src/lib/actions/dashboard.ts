@@ -35,7 +35,16 @@ export async function getDashboardData() {
         completed: false,
         date: { gte: todayStart, lte: todayEnd },
       },
-      include: { lead: true },
+      include: {
+        lead: {
+          include: {
+            pocs: {
+              orderBy: [{ isPrimary: "desc" }, { createdAt: "asc" }],
+              take: 1,
+            },
+          },
+        },
+      },
       orderBy: { date: "asc" },
     }),
     db.followUp.findMany({
@@ -43,12 +52,30 @@ export async function getDashboardData() {
         completed: false,
         date: { gte: todayStart, lte: weekEnd },
       },
-      include: { lead: true },
+      include: {
+        lead: {
+          include: {
+            pocs: {
+              orderBy: [{ isPrimary: "desc" }, { createdAt: "asc" }],
+              take: 1,
+            },
+          },
+        },
+      },
       orderBy: { date: "asc" },
       take: 10,
     }),
     db.activity.findMany({
-      include: { lead: true },
+      include: {
+        lead: {
+          include: {
+            pocs: {
+              orderBy: [{ isPrimary: "desc" }, { createdAt: "asc" }],
+              take: 1,
+            },
+          },
+        },
+      },
       orderBy: { createdAt: "desc" },
       take: 10,
     }),

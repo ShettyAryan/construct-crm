@@ -1,10 +1,11 @@
 "use client";
 
 import { useState } from "react";
-import { useForm } from "react-hook-form";
+import { useFieldArray, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "sonner";
-import type { Lead } from "@prisma/client";
+import { Plus, Trash2 } from "lucide-react";
+import type { Lead, Poc } from "@prisma/client";
 import {
   Dialog,
   DialogContent,
@@ -44,13 +45,23 @@ const statusOptions = LEAD_STATUSES.map((s) => ({
   label: STATUS_LABELS[s],
 }));
 
-function toDefaultValues(lead?: Lead): LeadInput {
+type LeadWithPocs = Lead & { pocs?: Poc[] };
+
+function emptyPoc(isPrimary = false): LeadInput["pocs"][number] {
+  return {
+    name: "",
+    email: "",
+    phone: "",
+    role: "",
+    linkedin: "",
+    isPrimary,
+  };
+}
+
+function toDefaultValues(lead?: LeadWithPocs): LeadInput {
   if (!lead) {
     return {
       company: "",
-      contact: "",
-      phone: "",
-      email: "",
       website: "",
       linkedin: "",
       industry: "",
@@ -63,13 +74,11 @@ function toDefaultValues(lead?: Lead): LeadInput {
       status: "New",
       notes: "",
       nextFollowUp: "",
+      pocs: [emptyPoc(true)],
     };
   }
   return {
     company: lead.company,
-    contact: lead.contact,
-    phone: lead.phone ?? "",
-    email: lead.email ?? "",
     website: lead.website ?? "",
     linkedin: lead.linkedin ?? "",
     industry: lead.industry ?? "",
@@ -82,6 +91,17 @@ function toDefaultValues(lead?: Lead): LeadInput {
     status: lead.status,
     notes: lead.notes ?? "",
     nextFollowUp: lead.nextFollowUp ? toISTDateInput(lead.nextFollowUp) : "",
+    pocs:
+      lead.pocs && lead.pocs.length > 0
+        ? lead.pocs.map((p) => ({
+            name: p.name,
+            email: p.email ?? "",
+            phone: p.phone ?? "",
+            role: p.role ?? "",
+            linkedin: p.linkedin ?? "",
+            isPrimary: p.isPrimary,
+          }))
+        : [emptyPoc(true)],
   };
 }
 
@@ -92,12 +112,17 @@ export function LeadFormDialog({
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  lead?: Lead;
+  lead?: LeadWithPocs;
 }) {
   const [saving, setSaving] = useState(false);
   const form = useForm<LeadInput>({
     resolver: zodResolver(leadSchema),
     values: toDefaultValues(lead),
+  });
+
+  const { fields, append, remove } = useFieldArray({
+    control: form.control,
+    name: "pocs",
   });
 
   const onSubmit = form.handleSubmit(async (values) => {
@@ -124,6 +149,13 @@ export function LeadFormDialog({
   const source = form.watch("source") || NONE;
   const priority = form.watch("priority");
   const status = form.watch("status");
+  const pocs = form.watch("pocs") ?? [];
+
+  function setPrimary(index: number) {
+    fields.forEach((_, i) => {
+      form.setValue(`pocs.${i}.isPrimary`, i === index, { shouldDirty: true });
+    });
+  }
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -139,19 +171,10 @@ export function LeadFormDialog({
             <Field label="Company" error={form.formState.errors.company?.message}>
               <Input {...form.register("company")} />
             </Field>
-            <Field label="Contact" error={form.formState.errors.contact?.message}>
-              <Input {...form.register("contact")} />
-            </Field>
-            <Field label="Phone">
-              <Input {...form.register("phone")} />
-            </Field>
-            <Field label="Email" error={form.formState.errors.email?.message}>
-              <Input type="email" {...form.register("email")} />
-            </Field>
             <Field label="Website">
               <Input {...form.register("website")} />
             </Field>
-            <Field label="LinkedIn">
+            <Field label="Company LinkedIn">
               <Input {...form.register("linkedin")} />
             </Field>
             <Field label="Industry">
@@ -219,6 +242,100 @@ export function LeadFormDialog({
             </Field>
           </div>
 
+          <div className="space-y-3">
+            <div className="flex items-center justify-between gap-2">
+              <div>
+                <Label>Points of contact</Label>
+                {form.formState.errors.pocs?.message ||
+                form.formState.errors.pocs?.root?.message ? (
+                  <p className="mt-1 text-xs text-destructive">
+                    {form.formState.errors.pocs?.message ||
+                      form.formState.errors.pocs?.root?.message}
+                  </p>
+                ) : null}
+              </div>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => append(emptyPoc(false))}
+              >
+                <Plus className="size-3.5" />
+                Add POC
+              </Button>
+            </div>
+
+            <div className="space-y-3">
+              {fields.map((field, index) => (
+                <div
+                  key={field.id}
+                  className="rounded-lg border p-3"
+                >
+                  <div className="mb-3 flex items-center justify-between gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setPrimary(index)}
+                      className={cn(
+                        "text-xs font-medium",
+                        pocs[index]?.isPrimary
+                          ? "text-foreground"
+                          : "text-muted-foreground hover:text-foreground"
+                      )}
+                    >
+                      {pocs[index]?.isPrimary ? "Primary POC" : "Set as primary"}
+                    </button>
+                    {fields.length > 1 ? (
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        className="h-8 w-8 p-0 text-muted-foreground hover:text-destructive"
+                        onClick={() => {
+                          const wasPrimary = pocs[index]?.isPrimary;
+                          remove(index);
+                          if (wasPrimary) {
+                            queueMicrotask(() => setPrimary(0));
+                          }
+                        }}
+                      >
+                        <Trash2 className="size-3.5" />
+                      </Button>
+                    ) : null}
+                  </div>
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    <Field
+                      label="Name"
+                      error={form.formState.errors.pocs?.[index]?.name?.message}
+                    >
+                      <Input {...form.register(`pocs.${index}.name`)} />
+                    </Field>
+                    <Field label="Role / title">
+                      <Input
+                        placeholder="e.g. CTO, Founder"
+                        {...form.register(`pocs.${index}.role`)}
+                      />
+                    </Field>
+                    <Field
+                      label="Email"
+                      error={form.formState.errors.pocs?.[index]?.email?.message}
+                    >
+                      <Input
+                        type="email"
+                        {...form.register(`pocs.${index}.email`)}
+                      />
+                    </Field>
+                    <Field label="Phone">
+                      <Input {...form.register(`pocs.${index}.phone`)} />
+                    </Field>
+                    <Field label="LinkedIn" className="sm:col-span-2">
+                      <Input {...form.register(`pocs.${index}.linkedin`)} />
+                    </Field>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
           <Field label="Interested services">
             <div className="flex flex-wrap gap-2">
               {SERVICE_OPTIONS.map((service) => {
@@ -269,13 +386,15 @@ function Field({
   label,
   error,
   children,
+  className,
 }: {
   label: string;
   error?: string;
   children: React.ReactNode;
+  className?: string;
 }) {
   return (
-    <div className="grid gap-1.5">
+    <div className={cn("grid gap-1.5", className)}>
       <Label>{label}</Label>
       {children}
       {error ? <p className="text-xs text-destructive">{error}</p> : null}

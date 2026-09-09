@@ -23,7 +23,12 @@ import { scheduleFollowUp } from "@/lib/actions/activity";
 
 const priorityOptions = PRIORITIES.map((p) => ({ value: p, label: p }));
 
-export type LeadOption = { id: string; company: string; contact: string };
+export type LeadOption = {
+  id: string;
+  company: string;
+  pocs?: { name: string }[];
+  contact?: string;
+};
 
 export function ScheduleFollowUpSheet({
   open,
@@ -61,10 +66,13 @@ export function ScheduleFollowUpSheet({
   }, [open, leadId, form]);
 
   const showLeadPicker = !leadId && leads.length > 0;
-  const leadOptions = leads.map((l) => ({
-    value: l.id,
-    label: `${l.company} · ${l.contact}`,
-  }));
+  const leadOptions = leads.map((l) => {
+    const pocName = l.pocs?.[0]?.name ?? l.contact;
+    return {
+      value: l.id,
+      label: pocName ? `${l.company} · ${pocName}` : l.company,
+    };
+  });
 
   const onSubmit = form.handleSubmit(async (values) => {
     const resolvedLeadId = leadId || values.leadId;

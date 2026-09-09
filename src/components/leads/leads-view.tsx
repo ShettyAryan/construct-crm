@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import { Plus } from "lucide-react";
-import type { Lead } from "@prisma/client";
+import type { Lead, Poc } from "@prisma/client";
 import { Button } from "@/components/ui/button";
 import {
   Table,
@@ -23,6 +23,7 @@ import {
 } from "@/components/shared/badges";
 import { LeadFormDialog } from "@/components/leads/lead-form-dialog";
 import { formatISTDate, formatISTShort } from "@/lib/datetime";
+import { formatPocName, getPrimaryPoc } from "@/lib/poc";
 import {
   AGENCIES,
   LEAD_STATUSES,
@@ -48,28 +49,51 @@ const priorityFilterOptions = [
   ...PRIORITIES.map((p) => ({ value: p, label: p })),
 ];
 
-export function LeadsView({ leads }: { leads: Lead[] }) {
+type LeadRow = Lead & { pocs: Poc[] };
+
+export function LeadsView({
+  leads,
+  initialAgency = ALL,
+  initialStatus = ALL,
+  initialPriority = ALL,
+  initialOpenOnly = false,
+}: {
+  leads: LeadRow[];
+  initialAgency?: string;
+  initialStatus?: string;
+  initialPriority?: string;
+  initialOpenOnly?: boolean;
+}) {
   const [q, setQ] = useState("");
-  const [agency, setAgency] = useState(ALL);
-  const [status, setStatus] = useState(ALL);
-  const [priority, setPriority] = useState(ALL);
+  const [agency, setAgency] = useState(initialAgency);
+  const [status, setStatus] = useState(initialStatus);
+  const [priority, setPriority] = useState(initialPriority);
+  const [openOnly] = useState(initialOpenOnly);
   const [open, setOpen] = useState(false);
 
   const filtered = useMemo(() => {
     const query = q.trim().toLowerCase();
     return leads.filter((lead) => {
+      if (openOnly && (lead.status === "Won" || lead.status === "Lost")) {
+        return false;
+      }
       if (agency !== ALL && lead.agency !== agency) return false;
       if (status !== ALL && lead.status !== status) return false;
       if (priority !== ALL && lead.priority !== priority) return false;
       if (!query) return true;
+      const pocMatch = lead.pocs.some(
+        (p) =>
+          p.name.toLowerCase().includes(query) ||
+          (p.email?.toLowerCase().includes(query) ?? false) ||
+          (p.phone?.toLowerCase().includes(query) ?? false)
+      );
       return (
         lead.company.toLowerCase().includes(query) ||
-        lead.contact.toLowerCase().includes(query) ||
-        (lead.email?.toLowerCase().includes(query) ?? false) ||
+        pocMatch ||
         (lead.city?.toLowerCase().includes(query) ?? false)
       );
     });
-  }, [leads, q, agency, status, priority]);
+  }, [leads, q, agency, status, priority, openOnly]);
 
   return (
     <div className="space-y-4">
@@ -78,7 +102,7 @@ export function LeadsView({ leads }: { leads: Lead[] }) {
           <SearchInput
             value={q}
             onChange={setQ}
-            placeholder="Search company, contact, email…"
+            placeholder="Search company, POC, email…"
             className="w-full sm:max-w-xs sm:flex-1"
           />
           <div className="grid grid-cols-1 gap-2 sm:flex sm:flex-wrap">
@@ -121,47 +145,53 @@ export function LeadsView({ leads }: { leads: Lead[] }) {
         />
       ) : (
         <>
-          {/* Mobile / tablet cards */}
           <div className="grid gap-3 md:hidden">
-            {filtered.map((lead) => (
-              <Link
-                key={lead.id}
-                href={`/leads/${lead.id}`}
-                className="rounded-lg border bg-card p-3.5 transition-colors active:bg-muted/40"
-              >
-                <div className="flex items-start justify-between gap-2">
-                  <div className="min-w-0">
-                    <p className="truncate font-medium">{lead.company}</p>
-                    <p className="mt-0.5 truncate text-sm text-muted-foreground">
-                      {lead.contact}
-                      {lead.city ? ` · ${lead.city}` : ""}
-                    </p>
+            {filtered.map((lead) => {
+              const poc = getPrimaryPoc(lead.pocs);
+              return (
+                <Link
+                  key={lead.id}
+                  href={`/leads/${lead.id}`}
+                  className="rounded-lg border bg-card p-3.5 transition-colors active:bg-muted/40"
+                >
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="min-w-0">
+                      <p className="truncate font-medium">{lead.company}</p>
+                      <p className="mt-0.5 truncate text-sm text-muted-foreground">
+                        {formatPocName(lead.pocs)}
+                        {lead.city ? ` · ${lead.city}` : ""}
+                      </p>
+                    </div>
+                    <PriorityBadge priority={lead.priority} />
                   </div>
-                  <PriorityBadge priority={lead.priority} />
-                </div>
-                <div className="mt-3 flex flex-wrap items-center gap-1.5">
-                  <AgencyBadge agency={lead.agency} />
-                  <StatusBadge status={lead.status} />
-                </div>
-                <div className="mt-2 flex items-center justify-between text-xs text-muted-foreground">
-                  <span>{formatBudget(lead.budget)}</span>
-                  <span>
-                    {lead.nextFollowUp
-                      ? formatISTShort(lead.nextFollowUp)
-                      : "No follow-up"}
-                  </span>
-                </div>
-              </Link>
-            ))}
+                  <div className="mt-3 flex flex-wrap items-center gap-1.5">
+                    <AgencyBadge agency={lead.agency} />
+                    <StatusBadge status={lead.status} />
+                  </div>
+                  <div className="mt-2 flex items-center justify-between text-xs text-muted-foreground">
+                    <span>{formatBudget(lead.budget)}</span>
+                    <span>
+                      {lead.nextFollowUp
+                        ? formatISTShort(lead.nextFollowUp)
+                        : "No follow-up"}
+                    </span>
+                  </div>
+                  {poc?.email ? (
+                    <p className="mt-1 truncate text-xs text-muted-foreground">
+                      {poc.email}
+                    </p>
+                  ) : null}
+                </Link>
+              );
+            })}
           </div>
 
-          {/* Desktop table */}
           <div className="hidden overflow-hidden rounded-lg border md:block">
             <Table>
               <TableHeader>
                 <TableRow>
                   <TableHead>Company</TableHead>
-                  <TableHead>Contact</TableHead>
+                  <TableHead>POC</TableHead>
                   <TableHead>Agency</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Priority</TableHead>
@@ -170,42 +200,50 @@ export function LeadsView({ leads }: { leads: Lead[] }) {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filtered.map((lead) => (
-                  <TableRow key={lead.id}>
-                    <TableCell>
-                      <Link
-                        href={`/leads/${lead.id}`}
-                        className="font-medium hover:underline"
-                      >
-                        {lead.company}
-                      </Link>
-                      {lead.city ? (
-                        <p className="text-xs text-muted-foreground">{lead.city}</p>
-                      ) : null}
-                    </TableCell>
-                    <TableCell>
-                      <div>{lead.contact}</div>
-                      {lead.email ? (
-                        <p className="text-xs text-muted-foreground">{lead.email}</p>
-                      ) : null}
-                    </TableCell>
-                    <TableCell>
-                      <AgencyBadge agency={lead.agency} />
-                    </TableCell>
-                    <TableCell>
-                      <StatusBadge status={lead.status} />
-                    </TableCell>
-                    <TableCell>
-                      <PriorityBadge priority={lead.priority} />
-                    </TableCell>
-                    <TableCell>{formatBudget(lead.budget)}</TableCell>
-                    <TableCell className="text-muted-foreground">
-                      {lead.nextFollowUp
-                        ? formatISTDate(lead.nextFollowUp)
-                        : "—"}
-                    </TableCell>
-                  </TableRow>
-                ))}
+                {filtered.map((lead) => {
+                  const poc = getPrimaryPoc(lead.pocs);
+                  return (
+                    <TableRow key={lead.id}>
+                      <TableCell>
+                        <Link
+                          href={`/leads/${lead.id}`}
+                          className="font-medium hover:underline"
+                        >
+                          {lead.company}
+                        </Link>
+                        {lead.city ? (
+                          <p className="text-xs text-muted-foreground">{lead.city}</p>
+                        ) : null}
+                      </TableCell>
+                      <TableCell>
+                        <div>{formatPocName(lead.pocs)}</div>
+                        {poc?.email ? (
+                          <p className="text-xs text-muted-foreground">{poc.email}</p>
+                        ) : null}
+                        {lead.pocs.length > 1 ? (
+                          <p className="text-xs text-muted-foreground">
+                            +{lead.pocs.length - 1} more
+                          </p>
+                        ) : null}
+                      </TableCell>
+                      <TableCell>
+                        <AgencyBadge agency={lead.agency} />
+                      </TableCell>
+                      <TableCell>
+                        <StatusBadge status={lead.status} />
+                      </TableCell>
+                      <TableCell>
+                        <PriorityBadge priority={lead.priority} />
+                      </TableCell>
+                      <TableCell>{formatBudget(lead.budget)}</TableCell>
+                      <TableCell className="text-muted-foreground">
+                        {lead.nextFollowUp
+                          ? formatISTDate(lead.nextFollowUp)
+                          : "—"}
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
               </TableBody>
             </Table>
           </div>

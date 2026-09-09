@@ -45,9 +45,6 @@ enum WorkStatus {
 model Lead {
   id          String     @id @default(cuid())
   company     String
-  contact     String
-  phone       String?
-  email       String?
   website     String?
   linkedin    String?
   industry    String?
@@ -63,12 +60,27 @@ model Lead {
   createdAt   DateTime   @default(now())
   updatedAt   DateTime   @updatedAt
 
+  pocs       Poc[]
   calls      Call[]
   meetings   Meeting[]
   followUps  FollowUp[]
   notesList  Note[]
   activities Activity[]
   client     Client?
+}
+
+model Poc {
+  id        String   @id @default(cuid())
+  name      String
+  email     String?
+  phone     String?
+  role      String?
+  linkedin  String?
+  isPrimary Boolean  @default(false)
+  leadId    String
+  lead      Lead     @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model Call {

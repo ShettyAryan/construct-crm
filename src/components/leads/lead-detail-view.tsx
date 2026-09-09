@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ExternalLink, Phone, StickyNote, Bell, Calendar } from "lucide-react";
+import { ExternalLink, Phone, StickyNote, Bell, Calendar, UserRound } from "lucide-react";
 import type {
   Activity,
   Call,
@@ -8,6 +8,7 @@ import type {
   Lead,
   Meeting,
   Note,
+  Poc,
 } from "@prisma/client";
 import { PageHeader } from "@/components/shared/page-header";
 import {
@@ -17,10 +18,12 @@ import {
 } from "@/components/shared/badges";
 import { formatBudget, parseJsonArray } from "@/lib/constants";
 import { formatISTDate, formatISTShort } from "@/lib/datetime";
+import { formatPocName } from "@/lib/poc";
 import { LeadDetailActions } from "@/components/leads/lead-detail-actions";
 import { Timeline } from "@/components/activity/timeline";
 
 type LeadDetail = Lead & {
+  pocs: Poc[];
   calls: Call[];
   meetings: Meeting[];
   followUps: FollowUp[];
@@ -31,12 +34,13 @@ type LeadDetail = Lead & {
 
 export function LeadDetailView({ lead }: { lead: LeadDetail }) {
   const services = parseJsonArray(lead.services);
+  const primaryName = formatPocName(lead.pocs);
 
   return (
     <div>
       <PageHeader
         title={lead.company}
-        description={`${lead.contact}${lead.city ? ` · ${lead.city}` : ""}`}
+        description={`${primaryName}${lead.city ? ` · ${lead.city}` : ""}`}
         actions={<LeadDetailActions lead={lead} />}
       />
 
@@ -98,8 +102,6 @@ export function LeadDetailView({ lead }: { lead: LeadDetail }) {
           <section className="rounded-lg border p-3 sm:p-4">
             <h2 className="mb-3 text-sm font-medium">Company details</h2>
             <dl className="grid gap-3 sm:grid-cols-2">
-              <Detail label="Email" value={lead.email} />
-              <Detail label="Phone" value={lead.phone} />
               <Detail
                 label="Website"
                 value={
@@ -137,7 +139,7 @@ export function LeadDetailView({ lead }: { lead: LeadDetail }) {
               <Detail label="Budget" value={formatBudget(lead.budget)} />
               <Detail
                 label="Next follow-up"
-                  value={
+                value={
                   lead.nextFollowUp
                     ? formatISTDate(lead.nextFollowUp)
                     : null
@@ -150,6 +152,58 @@ export function LeadDetailView({ lead }: { lead: LeadDetail }) {
                 />
               </div>
             </dl>
+          </section>
+
+          <section className="rounded-lg border p-3 sm:p-4">
+            <div className="mb-3 flex items-center gap-2">
+              <UserRound className="size-3.5 text-muted-foreground" />
+              <h2 className="text-sm font-medium">Points of contact</h2>
+            </div>
+            {lead.pocs.length === 0 ? (
+              <p className="text-sm text-muted-foreground">No POCs added</p>
+            ) : (
+              <ul className="space-y-4">
+                {lead.pocs.map((poc) => (
+                  <li key={poc.id} className="rounded-md border p-3">
+                    <div className="flex flex-wrap items-baseline justify-between gap-2">
+                      <div>
+                        <p className="text-sm font-medium">{poc.name}</p>
+                        {poc.role ? (
+                          <p className="text-xs text-muted-foreground">{poc.role}</p>
+                        ) : null}
+                      </div>
+                      {poc.isPrimary ? (
+                        <span className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide">
+                          Primary
+                        </span>
+                      ) : null}
+                    </div>
+                    <dl className="mt-3 grid gap-2 sm:grid-cols-2">
+                      <Detail label="Email" value={poc.email} />
+                      <Detail label="Phone" value={poc.phone} />
+                      <div className="sm:col-span-2">
+                        <Detail
+                          label="LinkedIn"
+                          value={
+                            poc.linkedin ? (
+                              <a
+                                href={poc.linkedin}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="inline-flex items-center gap-1 hover:underline"
+                              >
+                                Profile
+                                <ExternalLink className="size-3" />
+                              </a>
+                            ) : null
+                          }
+                        />
+                      </div>
+                    </dl>
+                  </li>
+                ))}
+              </ul>
+            )}
           </section>
 
           <section>
@@ -185,7 +239,7 @@ export function LeadDetailView({ lead }: { lead: LeadDetail }) {
             empty="No follow-ups"
             items={lead.followUps.map((f) => ({
               id: f.id,
-              title: `${formatISTShort(f.date)}${f.time ? ` · ${f.time}` : ""}${f.completed ? " ✓" : ""}`,
+              title: `${formatISTShort(f.date)}${f.time ? ` · ${f.time}` : ""}`,
               body: f.reminder ?? "Follow-up",
             }))}
           />

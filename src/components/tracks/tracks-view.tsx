@@ -3,7 +3,7 @@
 import { useTransition } from "react";
 import Link from "next/link";
 import { toast } from "sonner";
-import type { Client, Lead } from "@prisma/client";
+import type { Client, Lead, Poc } from "@prisma/client";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/shared/empty-state";
 import {
@@ -16,15 +16,17 @@ import { PageHeader } from "@/components/shared/page-header";
 import { formatBudget, STATUS_LABELS } from "@/lib/constants";
 import { formatISTShort } from "@/lib/datetime";
 import { updateClientWorkStatus } from "@/lib/actions/clients";
+import { formatPocName } from "@/lib/poc";
 
-type ClientRow = Client & { lead: Lead };
+type LeadWithPocs = Lead & { pocs: Poc[] };
+type ClientRow = Client & { lead: LeadWithPocs };
 
 export function TracksView({
   activeLeads,
   ongoingClients,
   completedClients,
 }: {
-  activeLeads: Lead[];
+  activeLeads: LeadWithPocs[];
   ongoingClients: ClientRow[];
   completedClients: ClientRow[];
 }) {
@@ -75,7 +77,7 @@ export function TracksView({
                     {lead.company}
                   </Link>
                   <p className="mt-0.5 text-xs text-muted-foreground">
-                    {lead.contact}
+                    {formatPocName(lead.pocs)}
                     {lead.city ? ` · ${lead.city}` : ""}
                   </p>
                   <div className="mt-2 flex flex-wrap items-center gap-1.5">

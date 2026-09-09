@@ -4,7 +4,7 @@ import { getLeadOptions } from "@/lib/actions/leads";
 
 export default async function FollowUpsPage() {
   const [followUps, leads] = await Promise.all([
-    getFollowUps("all"),
+    getFollowUps(),
     getLeadOptions(),
   ]);
   return <FollowUpsView followUps={followUps} leads={leads} />;

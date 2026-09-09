@@ -41,7 +41,15 @@ export async function ensureClientForWonLead(leadId: string) {
 
 export async function getClients() {
   return db.client.findMany({
-    include: { lead: true },
+    include: {
+      lead: {
+        include: {
+          pocs: {
+            orderBy: [{ isPrimary: "desc" }, { createdAt: "asc" }],
+          },
+        },
+      },
+    },
     orderBy: { updatedAt: "desc" },
   });
 }
@@ -77,20 +85,27 @@ export async function updateClientWorkStatus(
   return client;
 }
 
+const leadWithPocs = {
+  pocs: {
+    orderBy: [{ isPrimary: "desc" as const }, { createdAt: "asc" as const }],
+  },
+};
+
 export async function getTracksData() {
   const [activeLeads, ongoingClients, completedClients] = await Promise.all([
     db.lead.findMany({
       where: { status: { notIn: ["Won", "Lost"] } },
+      include: leadWithPocs,
       orderBy: [{ priority: "desc" }, { updatedAt: "desc" }],
     }),
     db.client.findMany({
       where: { workStatus: "Ongoing" },
-      include: { lead: true },
+      include: { lead: { include: leadWithPocs } },
       orderBy: { updatedAt: "desc" },
     }),
     db.client.findMany({
       where: { workStatus: "Completed" },
-      include: { lead: true },
+      include: { lead: { include: leadWithPocs } },
       orderBy: { updatedAt: "desc" },
     }),
   ]);

@@ -1,9 +1,9 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useMemo, useState, useTransition } from "react";
 import Link from "next/link";
 import { toast } from "sonner";
-import type { Client, Lead } from "@prisma/client";
+import type { Client, Lead, Poc } from "@prisma/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -31,13 +31,25 @@ import {
   updateClientWorkStatus,
 } from "@/lib/actions/clients";
 
-type ClientRow = Client & { lead: Lead };
+type ClientRow = Client & { lead: Lead & { pocs: Poc[] } };
 
-export function ClientsView({ clients }: { clients: ClientRow[] }) {
+export function ClientsView({
+  clients,
+  initialFilter = "all",
+}: {
+  clients: ClientRow[];
+  initialFilter?: "all" | "outstanding";
+}) {
   const [editing, setEditing] = useState<ClientRow | null>(null);
   const [agreed, setAgreed] = useState("");
   const [collected, setCollected] = useState("");
+  const [filter, setFilter] = useState<"all" | "outstanding">(initialFilter);
   const [pending, startTransition] = useTransition();
+
+  const visible = useMemo(() => {
+    if (filter !== "outstanding") return clients;
+    return clients.filter((c) => c.amountAgreed - c.amountCollected > 0);
+  }, [clients, filter]);
 
   function openEdit(client: ClientRow) {
     setEditing(client);
@@ -82,17 +94,43 @@ export function ClientsView({ clients }: { clients: ClientRow[] }) {
     <div>
       <PageHeader
         title="Clients"
-        description="Won deals — payments and work track (ongoing / completed)"
+        description={
+          filter === "outstanding"
+            ? "Clients with unpaid balance"
+            : "Won deals — payments and work track (ongoing / completed)"
+        }
       />
-      {clients.length === 0 ? (
+      <div className="mb-4 flex gap-2">
+        <Button
+          size="sm"
+          variant={filter === "all" ? "default" : "outline"}
+          onClick={() => setFilter("all")}
+        >
+          All
+        </Button>
+        <Button
+          size="sm"
+          variant={filter === "outstanding" ? "default" : "outline"}
+          onClick={() => setFilter("outstanding")}
+        >
+          Outstanding
+        </Button>
+      </div>
+      {visible.length === 0 ? (
         <EmptyState
-          title="No clients yet"
-          description="Move a lead to Won to create a client automatically."
+          title={
+            filter === "outstanding" ? "No outstanding balances" : "No clients yet"
+          }
+          description={
+            filter === "outstanding"
+              ? "All clients are fully paid."
+              : "Move a lead to Won to create a client automatically."
+          }
         />
       ) : (
         <>
           <div className="grid gap-3 md:hidden">
-            {clients.map((client) => {
+            {visible.map((client) => {
               const projects = parseJsonArray(client.projects);
               const outstanding = Math.max(
                 0,
@@ -189,7 +227,7 @@ export function ClientsView({ clients }: { clients: ClientRow[] }) {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {clients.map((client) => {
+                {visible.map((client) => {
                   const projects = parseJsonArray(client.projects);
                   const outstanding = Math.max(
                     0,

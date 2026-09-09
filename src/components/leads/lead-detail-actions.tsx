@@ -11,7 +11,7 @@ import {
   Trash2,
 } from "lucide-react";
 import { toast } from "sonner";
-import type { Lead } from "@prisma/client";
+import type { Lead, Poc } from "@prisma/client";
 import { Button } from "@/components/ui/button";
 import { LeadFormDialog } from "@/components/leads/lead-form-dialog";
 import { ConfirmDialog } from "@/components/shared/confirm-dialog";
@@ -21,7 +21,7 @@ import { ScheduleFollowUpSheet } from "@/components/activity/schedule-follow-up-
 import { LogMeetingSheet } from "@/components/activity/log-meeting-sheet";
 import { deleteLead } from "@/lib/actions/leads";
 
-export function LeadDetailActions({ lead }: { lead: Lead }) {
+export function LeadDetailActions({ lead }: { lead: Lead & { pocs: Poc[] } }) {
   const router = useRouter();
   const [editOpen, setEditOpen] = useState(false);
   const [callOpen, setCallOpen] = useState(false);

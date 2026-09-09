@@ -3,7 +3,7 @@
 import { useState, useTransition } from "react";
 import Link from "next/link";
 import { Plus } from "lucide-react";
-import type { FollowUp, Lead } from "@prisma/client";
+import type { FollowUp, Lead, Poc } from "@prisma/client";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -12,7 +12,7 @@ import { EmptyState } from "@/components/shared/empty-state";
 import { PriorityBadge } from "@/components/shared/badges";
 import { ScheduleFollowUpSheet } from "@/components/activity/schedule-follow-up-sheet";
 import { formatISTDate } from "@/lib/datetime";
-import { toggleFollowUp } from "@/lib/actions/activity";
+import { completeFollowUp } from "@/lib/actions/activity";
 import {
   Table,
   TableBody,
@@ -21,33 +21,28 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { cn } from "@/lib/utils";
 
-type Row = FollowUp & { lead: Lead | null };
+type Row = FollowUp & {
+  lead: (Lead & { pocs: Pick<Poc, "name">[] }) | null;
+};
 
 export function FollowUpsView({
   followUps,
   leads,
 }: {
   followUps: Row[];
-  leads: { id: string; company: string; contact: string }[];
+  leads: { id: string; company: string; pocs: { name: string }[] }[];
 }) {
   const [open, setOpen] = useState(false);
-  const [filter, setFilter] = useState<"all" | "pending" | "completed">("all");
   const [pending, startTransition] = useTransition();
 
-  const filtered = followUps.filter((f) => {
-    if (filter === "pending") return !f.completed;
-    if (filter === "completed") return f.completed;
-    return true;
-  });
-
-  function onToggle(id: string, checked: boolean) {
+  function onComplete(id: string) {
     startTransition(async () => {
       try {
-        await toggleFollowUp(id, checked);
+        await completeFollowUp(id);
+        toast.success("Follow-up completed");
       } catch {
-        toast.error("Failed to update");
+        toast.error("Failed to complete follow-up");
       }
     });
   }
@@ -65,21 +60,7 @@ export function FollowUpsView({
         }
       />
 
-      <div className="mb-4 flex gap-2 overflow-x-auto pb-1">
-        {(["all", "pending", "completed"] as const).map((f) => (
-          <Button
-            key={f}
-            size="sm"
-            className="shrink-0"
-            variant={filter === f ? "default" : "outline"}
-            onClick={() => setFilter(f)}
-          >
-            {f.charAt(0).toUpperCase() + f.slice(1)}
-          </Button>
-        ))}
-      </div>
-
-      {filtered.length === 0 ? (
+      {followUps.length === 0 ? (
         <EmptyState
           title="No follow-ups"
           description="Schedule a reminder to stay on top of deals."
@@ -93,19 +74,15 @@ export function FollowUpsView({
       ) : (
         <>
           <div className="grid gap-3 md:hidden">
-            {filtered.map((f) => (
-              <div
-                key={f.id}
-                className={cn(
-                  "flex gap-3 rounded-lg border p-3.5",
-                  f.completed && "opacity-60"
-                )}
-              >
+            {followUps.map((f) => (
+              <div key={f.id} className="flex gap-3 rounded-lg border p-3.5">
                 <Checkbox
-                  checked={f.completed}
+                  checked={false}
                   disabled={pending}
                   className="mt-1"
-                  onCheckedChange={(checked) => onToggle(f.id, Boolean(checked))}
+                  onCheckedChange={(checked) => {
+                    if (checked) onComplete(f.id);
+                  }}
                 />
                 <div className="min-w-0 flex-1">
                   <div className="flex items-start justify-between gap-2">
@@ -130,9 +107,6 @@ export function FollowUpsView({
                   <p className="mt-2 text-sm break-words">
                     {f.reminder ?? "Follow-up"}
                   </p>
-                  <p className="mt-1 text-xs text-muted-foreground">
-                    {f.completed ? "Completed" : "Pending"}
-                  </p>
                 </div>
               </div>
             ))}
@@ -147,22 +121,18 @@ export function FollowUpsView({
                   <TableHead>Lead</TableHead>
                   <TableHead>Reminder</TableHead>
                   <TableHead>Priority</TableHead>
-                  <TableHead>Status</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filtered.map((f) => (
-                  <TableRow
-                    key={f.id}
-                    className={f.completed ? "opacity-60" : ""}
-                  >
+                {followUps.map((f) => (
+                  <TableRow key={f.id}>
                     <TableCell>
                       <Checkbox
-                        checked={f.completed}
+                        checked={false}
                         disabled={pending}
-                        onCheckedChange={(checked) =>
-                          onToggle(f.id, Boolean(checked))
-                        }
+                        onCheckedChange={(checked) => {
+                          if (checked) onComplete(f.id);
+                        }}
                       />
                     </TableCell>
                     <TableCell className="whitespace-nowrap text-muted-foreground">
@@ -184,9 +154,6 @@ export function FollowUpsView({
                     <TableCell>{f.reminder ?? "—"}</TableCell>
                     <TableCell>
                       <PriorityBadge priority={f.priority} />
-                    </TableCell>
-                    <TableCell className="text-muted-foreground">
-                      {f.completed ? "Completed" : "Pending"}
                     </TableCell>
                   </TableRow>
                 ))}

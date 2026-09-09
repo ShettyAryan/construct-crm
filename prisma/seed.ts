@@ -29,6 +29,7 @@ async function main() {
   await prisma.note.deleteMany();
   await prisma.client.deleteMany();
   await prisma.task.deleteMany();
+  await prisma.poc.deleteMany();
   await prisma.lead.deleteMany();
 
   const leadsData = [
@@ -272,11 +273,45 @@ async function main() {
 
   const leads = [];
   for (const data of leadsData) {
-    const lead = await prisma.lead.create({ data });
+    const { contact, phone, email, linkedin, ...leadFields } = data as typeof data & {
+      contact: string;
+      phone?: string;
+      email?: string;
+      linkedin?: string;
+    };
+    const lead = await prisma.lead.create({
+      data: {
+        ...leadFields,
+        linkedin: linkedin && linkedin.includes("/in/") ? null : linkedin ?? null,
+        pocs: {
+          create: [
+            {
+              name: contact,
+              phone: phone ?? null,
+              email: email ?? null,
+              linkedin: linkedin && linkedin.includes("/in/") ? linkedin : null,
+              isPrimary: true,
+            },
+          ],
+        },
+      },
+    });
     leads.push(lead);
   }
 
   const byCompany = Object.fromEntries(leads.map((l) => [l.company, l]));
+
+  // Extra POC on a hot deal to demo multi-contact
+  await prisma.poc.create({
+    data: {
+      leadId: byCompany["Nexus Realty"].id,
+      name: "Rahul Verma",
+      role: "Head of Product",
+      email: "rahul@nexusrealty.in",
+      phone: "+91 98765 41002",
+      isPrimary: false,
+    },
+  });
 
   // Activities, calls, meetings, notes, follow-ups
   await prisma.call.createMany({

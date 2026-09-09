@@ -9,19 +9,47 @@ import {
   ensureFollowUpFromLeadDate,
   syncNotesFromLeadForm,
 } from "@/lib/sync-lead";
-import { leadSchema, type LeadInput } from "@/lib/validators";
+import { leadSchema, type LeadInput, type PocInput } from "@/lib/validators";
 import { ensureClientForWonLead } from "@/lib/actions/clients";
 
 function emptyToNull(v?: string | null) {
   return v && v.trim() ? v.trim() : null;
 }
 
+function normalizePocs(pocs: PocInput[]) {
+  const cleaned = pocs
+    .map((p) => ({
+      name: p.name.trim(),
+      email: emptyToNull(p.email),
+      phone: emptyToNull(p.phone),
+      role: emptyToNull(p.role),
+      linkedin: emptyToNull(p.linkedin),
+      isPrimary: Boolean(p.isPrimary),
+    }))
+    .filter((p) => p.name);
+
+  if (cleaned.length === 0) {
+    throw new Error("Add at least one POC");
+  }
+
+  if (!cleaned.some((p) => p.isPrimary)) {
+    cleaned[0].isPrimary = true;
+  } else {
+    let seenPrimary = false;
+    for (const p of cleaned) {
+      if (p.isPrimary) {
+        if (seenPrimary) p.isPrimary = false;
+        else seenPrimary = true;
+      }
+    }
+  }
+
+  return cleaned;
+}
+
 function mapLeadData(input: LeadInput) {
   return {
     company: input.company.trim(),
-    contact: input.contact.trim(),
-    phone: emptyToNull(input.phone),
-    email: emptyToNull(input.email),
     website: emptyToNull(input.website),
     linkedin: emptyToNull(input.linkedin),
     industry: emptyToNull(input.industry),
@@ -44,22 +72,34 @@ export async function getLeads(params?: {
   agency?: string;
   status?: string;
   priority?: string;
+  openOnly?: boolean;
 }) {
   const where: Record<string, unknown> = {};
   if (params?.agency) where.agency = params.agency;
   if (params?.status) where.status = params.status;
   if (params?.priority) where.priority = params.priority;
+  if (params?.openOnly) where.status = { notIn: ["Won", "Lost"] };
   if (params?.q) {
     where.OR = [
       { company: { contains: params.q } },
-      { contact: { contains: params.q } },
-      { email: { contains: params.q } },
       { city: { contains: params.q } },
+      {
+        pocs: {
+          some: {
+            OR: [
+              { name: { contains: params.q } },
+              { email: { contains: params.q } },
+              { phone: { contains: params.q } },
+            ],
+          },
+        },
+      },
     ];
   }
 
   return db.lead.findMany({
     where,
+    include: { pocs: { orderBy: [{ isPrimary: "desc" }, { createdAt: "asc" }] } },
     orderBy: [{ priority: "desc" }, { updatedAt: "desc" }],
   });
 }
@@ -68,9 +108,10 @@ export async function getLead(id: string) {
   return db.lead.findUnique({
     where: { id },
     include: {
+      pocs: { orderBy: [{ isPrimary: "desc" }, { createdAt: "asc" }] },
       calls: { orderBy: { date: "desc" } },
       meetings: { orderBy: { date: "desc" } },
-      followUps: { orderBy: { date: "asc" } },
+      followUps: { where: { completed: false }, orderBy: { date: "asc" } },
       notesList: { orderBy: { createdAt: "desc" } },
       activities: { orderBy: { createdAt: "desc" } },
       client: true,
@@ -81,7 +122,15 @@ export async function getLead(id: string) {
 export async function getLeadOptions() {
   return db.lead.findMany({
     where: { status: { notIn: ["Lost"] } },
-    select: { id: true, company: true, contact: true },
+    select: {
+      id: true,
+      company: true,
+      pocs: {
+        orderBy: [{ isPrimary: "desc" }, { createdAt: "asc" }],
+        take: 1,
+        select: { name: true },
+      },
+    },
     orderBy: { company: "asc" },
   });
 }
@@ -89,7 +138,14 @@ export async function getLeadOptions() {
 export async function createLead(raw: LeadInput) {
   const parsed = leadSchema.parse(raw);
   const data = mapLeadData(parsed);
-  const lead = await db.lead.create({ data });
+  const pocs = normalizePocs(parsed.pocs);
+
+  const lead = await db.lead.create({
+    data: {
+      ...data,
+      pocs: { create: pocs },
+    },
+  });
 
   await db.activity.create({
     data: {
@@ -126,7 +182,18 @@ export async function updateLead(id: string, raw: LeadInput) {
   if (!existing) throw new Error("Lead not found");
 
   const data = mapLeadData(parsed);
-  const lead = await db.lead.update({ where: { id }, data });
+  const pocs = normalizePocs(parsed.pocs);
+
+  const lead = await db.$transaction(async (tx) => {
+    await tx.poc.deleteMany({ where: { leadId: id } });
+    return tx.lead.update({
+      where: { id },
+      data: {
+        ...data,
+        pocs: { create: pocs },
+      },
+    });
+  });
 
   if (existing.status !== lead.status) {
     await db.activity.create({

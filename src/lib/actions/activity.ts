@@ -138,11 +138,11 @@ export async function scheduleFollowUp(raw: FollowUpInput) {
   return followUp;
 }
 
-export async function toggleFollowUp(id: string, completed: boolean) {
-  const followUp = await db.followUp.update({
-    where: { id },
-    data: { completed },
-  });
+export async function completeFollowUp(id: string) {
+  const followUp = await db.followUp.findUnique({ where: { id } });
+  if (!followUp) throw new Error("Follow-up not found");
+
+  await db.followUp.delete({ where: { id } });
 
   if (followUp.leadId) {
     await syncLeadNextFollowUp(followUp.leadId);
@@ -150,6 +150,14 @@ export async function toggleFollowUp(id: string, completed: boolean) {
 
   revalidateCrm(followUp.leadId);
   return followUp;
+}
+
+/** @deprecated Use completeFollowUp — completed follow-ups are removed */
+export async function toggleFollowUp(id: string, completed: boolean) {
+  if (completed) {
+    return completeFollowUp(id);
+  }
+  return db.followUp.findUniqueOrThrow({ where: { id } });
 }
 
 export async function getCalls() {
@@ -166,16 +174,19 @@ export async function getMeetings() {
   });
 }
 
-export async function getFollowUps(filter?: "pending" | "completed" | "all") {
-  const where =
-    filter === "pending"
-      ? { completed: false }
-      : filter === "completed"
-        ? { completed: true }
-        : {};
+export async function getFollowUps() {
   return db.followUp.findMany({
-    where,
-    include: { lead: true },
-    orderBy: [{ completed: "asc" }, { date: "asc" }],
+    where: { completed: false },
+    include: {
+      lead: {
+        include: {
+          pocs: {
+            orderBy: [{ isPrimary: "desc" }, { createdAt: "asc" }],
+            take: 1,
+          },
+        },
+      },
+    },
+    orderBy: { date: "asc" },
   });
 }

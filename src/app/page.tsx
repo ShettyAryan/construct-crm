@@ -32,25 +32,29 @@ export default async function DashboardPage() {
           label="Leads"
           value={data.totalLeads}
           icon={Users}
-          hint="All pipeline leads"
+          hint="View all pipeline leads"
+          href="/leads"
         />
         <StatCard
           label="Hot leads"
           value={data.hotLeads}
           icon={Flame}
-          hint="Open + Hot priority"
+          hint="Open deals with Hot priority"
+          href="/leads?priority=Hot&open=1"
         />
         <StatCard
           label="Deals won"
           value={data.dealsWon}
           icon={Trophy}
           hint="Converted clients"
+          href="/clients"
         />
         <StatCard
           label="Revenue pipeline"
           value={formatBudget(data.revenuePipeline)}
           icon={Wallet}
-          hint="Open deal budgets"
+          hint="Open deal budgets on Pipeline"
+          href="/pipeline"
         />
       </div>
 
@@ -59,19 +63,22 @@ export default async function DashboardPage() {
           label="Amount agreed"
           value={formatBudget(data.amountAgreed)}
           icon={Banknote}
-          hint="Total deal value on won clients"
+          hint="Total deal value on Clients"
+          href="/clients"
         />
         <StatCard
           label="Amount collected"
           value={formatBudget(data.amountCollected)}
           icon={Wallet}
           hint="Payments received so far"
+          href="/clients"
         />
         <StatCard
           label="Outstanding"
           value={formatBudget(data.amountOutstanding)}
           icon={Trophy}
-          hint="Agreed minus collected"
+          hint="Clients with unpaid balance"
+          href="/clients?filter=outstanding"
         />
       </div>
 
@@ -187,7 +194,12 @@ export default async function DashboardPage() {
                   className="flex items-start justify-between gap-3 py-2.5"
                 >
                   <div>
-                    <p className="text-sm font-medium">{t.title}</p>
+                    <Link
+                      href="/tasks"
+                      className="text-sm font-medium hover:underline"
+                    >
+                      {t.title}
+                    </Link>
                     <p className="text-xs text-muted-foreground">
                       {t.dueDate
                         ? `Due ${formatISTShort(t.dueDate)}`

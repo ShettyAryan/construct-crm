@@ -12,6 +12,7 @@
     "db:reset": "prisma migrate reset --force",
     "db:push:turso": "tsx scripts/push-turso.ts",
     "db:migrate:turso-work-status": "tsx scripts/migrate-turso-work-status.ts",
+    "db:migrate:turso-pocs": "tsx scripts/migrate-turso-pocs.ts",
     "postinstall": "prisma generate"
   },
   "prisma": {
