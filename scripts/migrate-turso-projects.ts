@@ -30,6 +30,8 @@ async function main() {
       "summary" TEXT,
       "clientId" TEXT NOT NULL,
       "managerId" TEXT,
+      "deadline" DATETIME,
+      "progress" INTEGER NOT NULL DEFAULT 0,
       "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
       "updatedAt" DATETIME NOT NULL,
       CONSTRAINT "Project_clientId_fkey" FOREIGN KEY ("clientId") REFERENCES "Client" ("id") ON DELETE CASCADE ON UPDATE CASCADE,
@@ -46,6 +48,7 @@ async function main() {
     )`,
     `CREATE INDEX "Project_clientId_idx" ON "Project"("clientId")`,
     `CREATE INDEX "Project_managerId_idx" ON "Project"("managerId")`,
+    `CREATE INDEX "Project_deadline_idx" ON "Project"("deadline")`,
     `CREATE INDEX "ProjectUpdate_projectId_createdAt_idx" ON "ProjectUpdate"("projectId", "createdAt")`,
   ];
 

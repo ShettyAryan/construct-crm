@@ -227,6 +227,8 @@ model Project {
   client    Client        @relation(fields: [clientId], references: [id], onDelete: Cascade)
   managerId String?
   manager   Profile?      @relation(fields: [managerId], references: [id], onDelete: SetNull)
+  deadline  DateTime?
+  progress  Int           @default(0)
   createdAt DateTime      @default(now())
   updatedAt DateTime      @updatedAt
 
@@ -234,6 +236,7 @@ model Project {
 
   @@index([clientId])
   @@index([managerId])
+  @@index([deadline])
 }
 
 model ProjectUpdate {

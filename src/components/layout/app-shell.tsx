@@ -58,7 +58,7 @@ const clientNav = [
 ];
 
 const workNav = [
-  { href: "/work", label: "Projects", icon: "Briefcase" as const, area: "work" as const, admin: false },
+  { href: "/work", label: "Calendar", icon: "Calendar" as const, area: "work" as const, admin: false },
   { href: "/history", label: "History", icon: "History" as const, area: null, admin: false },
   { href: "/profiles", label: "Profiles", icon: "Shield" as const, area: null, admin: true },
 ];
@@ -191,7 +191,7 @@ export function AppShell({
 
   const inWork = pathname === "/work" || pathname.startsWith("/work/");
   const bottomItems = (inWork
-    ? [{ href: "/work", label: "Projects", icon: Briefcase, area: "work" as const }]
+    ? [{ href: "/work", label: "Calendar", icon: Calendar, area: "work" as const }]
     : bottomNav
   ).filter((item) => canOpen(user, item.area));
 

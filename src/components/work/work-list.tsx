@@ -7,6 +7,7 @@ import { toast } from "sonner";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { ClientRecordButton } from "@/components/work/client-work-switch";
+import { WorkCalendar } from "@/components/work/work-calendar";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -23,7 +24,7 @@ import { AppSelect } from "@/components/shared/app-select";
 import { Badge } from "@/components/ui/badge";
 import { useCanEdit } from "@/components/auth/access-context";
 import { createProject } from "@/lib/actions/work";
-import { formatISTDateTime } from "@/lib/datetime";
+import { formatISTDate, formatISTDateTime } from "@/lib/datetime";
 import {
   PROJECT_STATUSES,
   PROJECT_STATUS_LABELS,
@@ -43,6 +44,8 @@ export type WorkProjectRow = {
   client: { id: string; company: string; leadId: string };
   managerName: string | null;
   lastUpdate: string | null;
+  deadline: string | null;
+  progress: number;
 };
 
 export function WorkList({
@@ -57,6 +60,7 @@ export function WorkList({
   clientId?: string;
 }) {
   const canEdit = useCanEdit("work");
+  const [view, setView] = useState<"calendar" | "list">("calendar");
   const [open, setOpen] = useState(Boolean(clientId) && projects.length === 0 && canEdit);
   const [name, setName] = useState("");
   const [selectedClient, setSelectedClient] = useState(clientId || clients[0]?.id || "");
@@ -98,12 +102,36 @@ export function WorkList({
             : "Delivery for clients in the client track"
         }
         actions={
-          canEdit ? (
-            <Button className="w-full sm:w-auto" onClick={() => setOpen(true)}>
-              <Plus className="size-4" />
-              New project
-            </Button>
-          ) : null
+          <div className="flex w-full flex-wrap gap-2 sm:w-auto sm:justify-end">
+            <div className="grid grid-cols-2 gap-1 rounded-lg bg-muted/70 p-1">
+              <button
+                type="button"
+                className={cn(
+                  "rounded-md px-2.5 py-1 text-xs",
+                  view === "calendar" ? "bg-background font-medium shadow-sm" : "text-muted-foreground"
+                )}
+                onClick={() => setView("calendar")}
+              >
+                Calendar
+              </button>
+              <button
+                type="button"
+                className={cn(
+                  "rounded-md px-2.5 py-1 text-xs",
+                  view === "list" ? "bg-background font-medium shadow-sm" : "text-muted-foreground"
+                )}
+                onClick={() => setView("list")}
+              >
+                List
+              </button>
+            </div>
+            {canEdit ? (
+              <Button className="w-full sm:w-auto" onClick={() => setOpen(true)}>
+                <Plus className="size-4" />
+                New project
+              </Button>
+            ) : null}
+          </div>
         }
       />
 
@@ -119,7 +147,13 @@ export function WorkList({
         </div>
       ) : null}
 
-      {projects.length === 0 ? (
+      {view === "calendar" ? (
+        <div className="mb-6">
+          <WorkCalendar projects={projects} canEdit={canEdit} />
+        </div>
+      ) : null}
+
+      {view === "list" && projects.length === 0 ? (
         <EmptyState
           title="No projects yet"
           description="Open a project for a client to track who manages it and what changed."
@@ -132,7 +166,7 @@ export function WorkList({
             ) : undefined
           }
         />
-      ) : (
+      ) : view === "list" ? (
         <ul className="grid gap-3">
           {projects.map((project) => (
             <li key={project.id} className="rounded-lg border">
@@ -142,6 +176,8 @@ export function WorkList({
                   <p className="mt-0.5 text-sm text-muted-foreground">
                     {project.client.company}
                     {project.managerName ? ` · ${project.managerName}` : " · No manager"}
+                    {` · ${project.progress}%`}
+                    {project.deadline ? ` · due ${formatISTDate(project.deadline)}` : ""}
                   </p>
                   <p className="mt-2 text-xs text-muted-foreground">
                     {project.lastUpdate
@@ -159,7 +195,7 @@ export function WorkList({
             </li>
           ))}
         </ul>
-      )}
+      ) : null}
 
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="max-h-[90dvh] overflow-y-auto sm:max-w-md">

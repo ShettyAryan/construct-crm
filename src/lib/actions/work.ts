@@ -10,6 +10,7 @@ import {
   isProjectStatus,
 } from "@/lib/project-status";
 import { linkOngoingClientProjects } from "@/lib/work-sync";
+import { formatISTDate, parseISTInput } from "@/lib/datetime";
 
 function refreshWork(projectId?: string) {
   revalidatePath("/work");
@@ -78,6 +79,8 @@ export async function createProject(input: {
   managerId?: string | null;
   status?: string;
   summary?: string | null;
+  deadline?: string | null;
+  progress?: number | null;
 }) {
   await requireEdit("work");
   const name = input.name.trim();
@@ -95,6 +98,7 @@ export async function createProject(input: {
     if (!manager) throw new Error("Choose an active profile as the manager");
   }
 
+  const progress = clampProgress(input.progress ?? (status === "Completed" ? 100 : 0));
   const project = await db.project.create({
     data: {
       name,
@@ -102,6 +106,8 @@ export async function createProject(input: {
       managerId,
       status: status as ProjectStatus,
       summary: input.summary?.trim() || null,
+      deadline: input.deadline ? parseISTInput(input.deadline) : null,
+      progress,
     },
     include: { manager: true },
   });
@@ -133,7 +139,10 @@ export async function updateProjectStatus(id: string, status: string) {
 
   await db.project.update({
     where: { id },
-    data: { status: status as ProjectStatus },
+    data: {
+      status: status as ProjectStatus,
+      ...(status === "Completed" ? { progress: 100 } : {}),
+    },
   });
   await writeUpdate(
     id,
@@ -180,6 +189,64 @@ export async function updateProjectManager(id: string, managerId: string) {
     entityId: id,
     entityLabel: existing.name,
     summary: `Set manager of ${existing.name} to ${managerName}`,
+  });
+  refreshWork(id);
+}
+
+function clampProgress(value: number) {
+  if (!Number.isFinite(value)) return 0;
+  return Math.max(0, Math.min(100, Math.round(value)));
+}
+
+export async function updateProjectDeadline(id: string, date: string | null) {
+  await requireEdit("work");
+  const existing = await db.project.findUnique({ where: { id } });
+  if (!existing) throw new Error("Project not found");
+
+  const deadline = date ? parseISTInput(date) : null;
+  const previous = existing.deadline?.getTime() ?? null;
+  const next = deadline?.getTime() ?? null;
+  if (previous === next) return;
+
+  await db.project.update({
+    where: { id },
+    data: { deadline },
+  });
+  const label = deadline ? formatISTDate(deadline) : "none";
+  await writeUpdate(
+    id,
+    deadline ? `Deadline set to ${label}` : "Deadline cleared"
+  );
+  await recordChange({
+    action: "updated",
+    entityType: "Project",
+    entityId: id,
+    entityLabel: existing.name,
+    summary: deadline
+      ? `Set deadline of ${existing.name} to ${label}`
+      : `Cleared deadline of ${existing.name}`,
+  });
+  refreshWork(id);
+}
+
+export async function updateProjectProgress(id: string, value: number) {
+  await requireEdit("work");
+  const existing = await db.project.findUnique({ where: { id } });
+  if (!existing) throw new Error("Project not found");
+  const progress = clampProgress(value);
+  if (existing.progress === progress) return;
+
+  await db.project.update({
+    where: { id },
+    data: { progress },
+  });
+  await writeUpdate(id, `Progress set to ${progress}%`);
+  await recordChange({
+    action: "updated",
+    entityType: "Project",
+    entityId: id,
+    entityLabel: existing.name,
+    summary: `Set progress of ${existing.name} to ${progress}%`,
   });
   refreshWork(id);
 }

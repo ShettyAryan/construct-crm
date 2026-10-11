@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { toast } from "sonner";
 import { Button, buttonVariants } from "@/components/ui/button";
@@ -12,10 +12,13 @@ import { useCanEdit } from "@/components/auth/access-context";
 import { ClientRecordButton } from "@/components/work/client-work-switch";
 import {
   addProjectUpdate,
+  updateProjectDeadline,
   updateProjectManager,
+  updateProjectProgress,
   updateProjectStatus,
 } from "@/lib/actions/work";
-import { formatISTDateTime } from "@/lib/datetime";
+import { formatISTDate, formatISTDateTime, toISTDateInput } from "@/lib/datetime";
+import { Input } from "@/components/ui/input";
 import {
   PROJECT_STATUSES,
   PROJECT_STATUS_LABELS,
@@ -34,6 +37,8 @@ export type WorkDetail = {
   summary: string | null;
   client: { id: string; company: string; leadId: string };
   managerId: string | null;
+  deadline: string | null;
+  progress: number;
   updates: {
     id: string;
     body: string;
@@ -53,6 +58,10 @@ export function WorkDetailView({
   const canEdit = useCanEdit("work");
   const [note, setNote] = useState("");
   const [saving, setSaving] = useState(false);
+  const [progress, setProgress] = useState(project.progress);
+  useEffect(() => {
+    setProgress(project.progress);
+  }, [project.progress]);
 
   async function onStatus(status: string) {
     try {
@@ -69,6 +78,24 @@ export function WorkDetailView({
       toast.success("Manager updated");
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Could not update manager");
+    }
+  }
+
+  async function onDeadline(value: string) {
+    try {
+      await updateProjectDeadline(project.id, value || null);
+      toast.success(value ? "Deadline set" : "Deadline cleared");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Could not update deadline");
+    }
+  }
+
+  async function onProgress(value: number) {
+    try {
+      await updateProjectProgress(project.id, value);
+    } catch (error) {
+      setProgress(project.progress);
+      toast.error(error instanceof Error ? error.message : "Could not update progress");
     }
   }
 
@@ -133,6 +160,33 @@ export function WorkDetailView({
                 })),
               ]}
               disabled={!canEdit}
+            />
+          </div>
+          <div className="grid gap-1.5">
+            <p className="text-xs text-muted-foreground">Deadline</p>
+            <Input
+              type="date"
+              value={project.deadline ? toISTDateInput(project.deadline) : ""}
+              disabled={!canEdit}
+              onChange={(event) => onDeadline(event.target.value)}
+            />
+          </div>
+          <div className="grid gap-1.5">
+            <div className="flex items-center justify-between text-xs">
+              <p className="text-muted-foreground">Progress</p>
+              <p>{progress}%</p>
+            </div>
+            <input
+              type="range"
+              min={0}
+              max={100}
+              value={progress}
+              disabled={!canEdit}
+              aria-label="Project progress"
+              className="w-full accent-foreground"
+              onChange={(event) => setProgress(Number(event.target.value))}
+              onPointerUp={(event) => onProgress(Number(event.currentTarget.value))}
+              onKeyUp={(event) => onProgress(Number(event.currentTarget.value))}
             />
           </div>
           {project.summary ? (

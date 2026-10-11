@@ -34,6 +34,8 @@ export default async function WorkPage({
         client: project.client,
         managerName: project.manager?.name ?? null,
         lastUpdate: project.updates[0]?.body ?? null,
+        deadline: project.deadline?.toISOString() ?? null,
+        progress: project.progress,
       }))}
     />
   );

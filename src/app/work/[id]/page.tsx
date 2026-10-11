@@ -32,6 +32,8 @@ export default async function WorkProjectPage({
           leadId: project.client.leadId,
         },
         managerId: project.managerId,
+        deadline: project.deadline?.toISOString() ?? null,
+        progress: project.progress,
         updates: project.updates.map((update) => ({
           id: update.id,
           body: update.body,

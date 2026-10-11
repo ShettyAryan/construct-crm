@@ -152,7 +152,7 @@ export async function applyClientWorkStatus(
   for (const project of active) {
     await db.project.update({
       where: { id: project.id },
-      data: { status: "Completed" },
+      data: { status: "Completed", progress: 100 },
     });
     await addTimeline(
       project.id,

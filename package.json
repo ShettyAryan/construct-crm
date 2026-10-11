@@ -15,6 +15,7 @@
     "db:migrate:turso-pocs": "tsx scripts/migrate-turso-pocs.ts",
     "db:migrate:turso-profiles": "tsx scripts/migrate-turso-profiles.ts",
     "db:migrate:turso-projects": "tsx scripts/migrate-turso-projects.ts",
+    "db:migrate:turso-project-deadline": "tsx scripts/migrate-turso-project-deadline.ts",
     "postinstall": "prisma generate"
   },
   "prisma": {
