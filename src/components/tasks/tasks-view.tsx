@@ -25,6 +25,7 @@ import { PRIORITIES } from "@/lib/constants";
 import { formatISTDate, todayISTDateInput } from "@/lib/datetime";
 import { taskSchema, type TaskInput } from "@/lib/validators";
 import { createTask, deleteTask, toggleTask } from "@/lib/actions/tasks";
+import { useCanEdit } from "@/components/auth/access-context";
 import { cn } from "@/lib/utils";
 
 const priorityOptions = PRIORITIES.map((p) => ({ value: p, label: p }));
@@ -32,6 +33,7 @@ const priorityOptions = PRIORITIES.map((p) => ({ value: p, label: p }));
 export function TasksView({ tasks }: { tasks: Task[] }) {
   const [open, setOpen] = useState(false);
   const [pending, startTransition] = useTransition();
+  const canEditTasks = useCanEdit("tasks");
   const form = useForm<TaskInput>({
     resolver: zodResolver(taskSchema),
     defaultValues: { title: "", dueDate: "", priority: "Medium" },
@@ -54,10 +56,12 @@ export function TasksView({ tasks }: { tasks: Task[] }) {
         title="Tasks"
         description="Simple personal task list · Dates in IST"
         actions={
-          <Button className="w-full sm:w-auto" onClick={() => setOpen(true)}>
-            <Plus className="size-4" />
-            New task
-          </Button>
+          canEditTasks ? (
+            <Button className="w-full sm:w-auto" onClick={() => setOpen(true)}>
+              <Plus className="size-4" />
+              New task
+            </Button>
+          ) : null
         }
       />
 
@@ -66,10 +70,12 @@ export function TasksView({ tasks }: { tasks: Task[] }) {
           title="No tasks"
           description="Add a task to track something outside the pipeline."
           action={
-            <Button onClick={() => setOpen(true)}>
-              <Plus className="size-4" />
-              New task
-            </Button>
+            canEditTasks ? (
+              <Button onClick={() => setOpen(true)}>
+                <Plus className="size-4" />
+                New task
+              </Button>
+            ) : undefined
           }
         />
       ) : (
@@ -84,7 +90,7 @@ export function TasksView({ tasks }: { tasks: Task[] }) {
             >
               <Checkbox
                 checked={task.completed}
-                disabled={pending}
+                disabled={pending || !canEditTasks}
                 className="mt-1 sm:mt-0"
                 onCheckedChange={(checked) => {
                   startTransition(async () => {
@@ -113,10 +119,11 @@ export function TasksView({ tasks }: { tasks: Task[] }) {
               </div>
               <div className="flex shrink-0 items-center gap-1">
                 <PriorityBadge priority={task.priority} />
-                <Button
-                  variant="ghost"
-                  size="icon-sm"
-                  onClick={() => {
+                {canEditTasks ? (
+                  <Button
+                    variant="ghost"
+                    size="icon-sm"
+                    onClick={() => {
                     startTransition(async () => {
                       try {
                         await deleteTask(task.id);
@@ -129,6 +136,7 @@ export function TasksView({ tasks }: { tasks: Task[] }) {
                 >
                   <Trash2 className="size-3.5 text-muted-foreground" />
                 </Button>
+                ) : null}
               </div>
             </li>
           ))}

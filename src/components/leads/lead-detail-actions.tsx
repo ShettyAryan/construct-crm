@@ -20,6 +20,7 @@ import { AddNoteSheet } from "@/components/activity/add-note-sheet";
 import { ScheduleFollowUpSheet } from "@/components/activity/schedule-follow-up-sheet";
 import { LogMeetingSheet } from "@/components/activity/log-meeting-sheet";
 import { deleteLead } from "@/lib/actions/leads";
+import { useCanEdit } from "@/components/auth/access-context";
 
 export function LeadDetailActions({ lead }: { lead: Lead & { pocs: Poc[] } }) {
   const router = useRouter();
@@ -30,38 +31,54 @@ export function LeadDetailActions({ lead }: { lead: Lead & { pocs: Poc[] } }) {
   const [meetingOpen, setMeetingOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const canEditLeads = useCanEdit("leads");
+  const canEditCalls = useCanEdit("calls");
+  const canEditMeetings = useCanEdit("meetings");
+  const canEditFollowUps = useCanEdit("followUps");
 
   return (
     <>
       <div className="flex w-full flex-wrap gap-2 sm:justify-end">
-        <Button variant="outline" size="sm" className="flex-1 sm:flex-none" onClick={() => setCallOpen(true)}>
-          <Phone className="size-3.5" />
-          Log call
-        </Button>
-        <Button variant="outline" size="sm" className="flex-1 sm:flex-none" onClick={() => setNoteOpen(true)}>
-          <StickyNote className="size-3.5" />
-          Add note
-        </Button>
-        <Button variant="outline" size="sm" className="flex-1 sm:flex-none" onClick={() => setFollowOpen(true)}>
-          <Bell className="size-3.5" />
-          Follow-up
-        </Button>
-        <Button variant="outline" size="sm" className="flex-1 sm:flex-none" onClick={() => setMeetingOpen(true)}>
-          <Calendar className="size-3.5" />
-          Meeting
-        </Button>
-        <Button variant="outline" size="sm" className="flex-1 sm:flex-none" onClick={() => setEditOpen(true)}>
-          <Pencil className="size-3.5" />
-          Edit
-        </Button>
-        <Button
-          variant="ghost"
-          size="sm"
-          className="text-destructive"
-          onClick={() => setDeleteOpen(true)}
-        >
-          <Trash2 className="size-3.5" />
-        </Button>
+        {canEditCalls ? (
+          <Button variant="outline" size="sm" className="flex-1 sm:flex-none" onClick={() => setCallOpen(true)}>
+            <Phone className="size-3.5" />
+            Log call
+          </Button>
+        ) : null}
+        {canEditLeads ? (
+          <Button variant="outline" size="sm" className="flex-1 sm:flex-none" onClick={() => setNoteOpen(true)}>
+            <StickyNote className="size-3.5" />
+            Add note
+          </Button>
+        ) : null}
+        {canEditFollowUps ? (
+          <Button variant="outline" size="sm" className="flex-1 sm:flex-none" onClick={() => setFollowOpen(true)}>
+            <Bell className="size-3.5" />
+            Follow-up
+          </Button>
+        ) : null}
+        {canEditMeetings ? (
+          <Button variant="outline" size="sm" className="flex-1 sm:flex-none" onClick={() => setMeetingOpen(true)}>
+            <Calendar className="size-3.5" />
+            Meeting
+          </Button>
+        ) : null}
+        {canEditLeads ? (
+          <Button variant="outline" size="sm" className="flex-1 sm:flex-none" onClick={() => setEditOpen(true)}>
+            <Pencil className="size-3.5" />
+            Edit
+          </Button>
+        ) : null}
+        {canEditLeads ? (
+          <Button
+            variant="ghost"
+            size="sm"
+            className="text-destructive"
+            onClick={() => setDeleteOpen(true)}
+          >
+            <Trash2 className="size-3.5" />
+          </Button>
+        ) : null}
       </div>
 
       <LeadFormDialog open={editOpen} onOpenChange={setEditOpen} lead={lead} />

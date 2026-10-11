@@ -13,6 +13,7 @@
     "db:push:turso": "tsx scripts/push-turso.ts",
     "db:migrate:turso-work-status": "tsx scripts/migrate-turso-work-status.ts",
     "db:migrate:turso-pocs": "tsx scripts/migrate-turso-pocs.ts",
+    "db:migrate:turso-profiles": "tsx scripts/migrate-turso-profiles.ts",
     "postinstall": "prisma generate"
   },
   "prisma": {

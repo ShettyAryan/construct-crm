@@ -30,6 +30,7 @@ import {
   updateClientPayment,
   updateClientWorkStatus,
 } from "@/lib/actions/clients";
+import { useCanEdit } from "@/components/auth/access-context";
 
 type ClientRow = Client & { lead: Lead & { pocs: Poc[] } };
 
@@ -45,6 +46,7 @@ export function ClientsView({
   const [collected, setCollected] = useState("");
   const [filter, setFilter] = useState<"all" | "outstanding">(initialFilter);
   const [pending, startTransition] = useTransition();
+  const canEditClients = useCanEdit("clients");
 
   const visible = useMemo(() => {
     if (filter !== "outstanding") return clients;
@@ -174,6 +176,7 @@ export function ClientsView({
                   <p className="mt-2 text-xs text-muted-foreground line-clamp-1">
                     {projects.join(", ") || "No projects"}
                   </p>
+                  {canEditClients ? (
                   <div className="mt-3 grid grid-cols-2 gap-2">
                     <Button
                       variant="outline"
@@ -207,6 +210,7 @@ export function ClientsView({
                         : "Reopen"}
                     </Button>
                   </div>
+                  ) : null}
                 </div>
               );
             })}
@@ -260,6 +264,7 @@ export function ClientsView({
                         {projects.join(", ") || "—"}
                       </TableCell>
                       <TableCell>
+                        {canEditClients ? (
                         <div className="flex gap-1.5">
                           <Button
                             variant="outline"
@@ -293,6 +298,9 @@ export function ClientsView({
                               : "Reopen"}
                           </Button>
                         </div>
+                        ) : (
+                          <span className="text-xs text-muted-foreground">View only</span>
+                        )}
                       </TableCell>
                     </TableRow>
                   );

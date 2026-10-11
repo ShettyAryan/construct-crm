@@ -2,8 +2,10 @@
 
 import { db } from "@/lib/db";
 import { getISTDayBounds } from "@/lib/datetime";
+import { requireProfile } from "@/lib/auth";
 
 export async function getDashboardData() {
+  await requireProfile();
   const { start: todayStart, end: todayEnd, endAhead: weekEnd } =
     getISTDayBounds(7);
 
@@ -15,7 +17,7 @@ export async function getDashboardData() {
     clients,
     followUpsDueToday,
     upcomingFollowUps,
-    recentActivity,
+    recentChanges,
     pendingTasks,
   ] = await Promise.all([
     db.lead.count(),
@@ -65,19 +67,9 @@ export async function getDashboardData() {
       orderBy: { date: "asc" },
       take: 10,
     }),
-    db.activity.findMany({
-      include: {
-        lead: {
-          include: {
-            pocs: {
-              orderBy: [{ isPrimary: "desc" }, { createdAt: "asc" }],
-              take: 1,
-            },
-          },
-        },
-      },
+    db.auditLog.findMany({
       orderBy: { createdAt: "desc" },
-      take: 10,
+      take: 8,
     }),
     db.task.findMany({
       where: { completed: false },
@@ -108,7 +100,7 @@ export async function getDashboardData() {
     amountOutstanding,
     followUpsDueToday,
     upcomingFollowUps,
-    recentActivity,
+    recentChanges,
     pendingTasks,
   };
 }

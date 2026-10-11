@@ -16,6 +16,7 @@ import { PageHeader } from "@/components/shared/page-header";
 import { formatBudget, STATUS_LABELS } from "@/lib/constants";
 import { formatISTShort } from "@/lib/datetime";
 import { updateClientWorkStatus } from "@/lib/actions/clients";
+import { useCanEdit } from "@/components/auth/access-context";
 import { formatPocName } from "@/lib/poc";
 
 type LeadWithPocs = Lead & { pocs: Poc[] };
@@ -194,6 +195,7 @@ function ClientTrackCard({
   onAction: () => void;
 }) {
   const outstanding = Math.max(0, client.amountAgreed - client.amountCollected);
+  const canEditClients = useCanEdit("clients");
 
   return (
     <li className="rounded-lg border bg-card p-3">
@@ -223,6 +225,7 @@ function ClientTrackCard({
           <p className="font-medium">{formatBudget(outstanding)}</p>
         </div>
       </div>
+      {canEditClients ? (
       <Button
         variant="outline"
         size="sm"
@@ -232,6 +235,7 @@ function ClientTrackCard({
       >
         {actionLabel}
       </Button>
+      ) : null}
     </li>
   );
 }

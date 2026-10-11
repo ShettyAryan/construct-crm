@@ -128,13 +128,15 @@ model Note {
 }
 
 model Activity {
-  id        String       @id @default(cuid())
-  type      ActivityType
-  title     String
-  body      String?
-  leadId    String
-  lead      Lead         @relation(fields: [leadId], references: [id], onDelete: Cascade)
-  createdAt DateTime     @default(now())
+  id         String       @id @default(cuid())
+  type       ActivityType
+  title      String
+  body       String?
+  actorName  String?
+  actorLogin String?
+  leadId     String
+  lead       Lead         @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  createdAt  DateTime     @default(now())
 }
 
 model Task {
@@ -159,4 +161,48 @@ model Client {
   lead            Lead       @relation(fields: [leadId], references: [id], onDelete: Cascade)
   createdAt       DateTime   @default(now())
   updatedAt       DateTime   @updatedAt
+}
+
+model Profile {
+  id           String    @id @default(cuid())
+  name         String
+  loginId      String    @unique
+  passwordHash String
+  active       Boolean   @default(true)
+  isAdmin      Boolean   @default(false)
+  access       String    @default("{}")
+  lastLoginAt  DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  sessions  Session[]
+  auditLogs AuditLog[]
+}
+
+model Session {
+  id        String   @id @default(cuid())
+  token     String   @unique
+  profileId String
+  profile   Profile  @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@index([profileId])
+}
+
+model AuditLog {
+  id          String   @id @default(cuid())
+  action      String
+  entityType  String
+  entityId    String?
+  entityLabel String
+  summary     String
+  profileId   String?
+  profile     Profile? @relation(fields: [profileId], references: [id], onDelete: SetNull)
+  actorName   String
+  actorLogin  String
+  createdAt   DateTime @default(now())
+
+  @@index([createdAt])
+  @@index([entityType, entityId])
 }

@@ -155,27 +155,30 @@ export default async function DashboardPage() {
           )}
         </Panel>
 
-        <Panel title="Recent activity" icon={LayoutDashboard} href="/leads">
-          {data.recentActivity.length === 0 ? (
-            <EmptyState title="No activity" className="border-0 py-8" />
+        <Panel title="Recent changes" icon={LayoutDashboard} href="/history">
+          {data.recentChanges.length === 0 ? (
+            <EmptyState title="No changes yet" className="border-0 py-8" />
           ) : (
             <ul className="divide-y">
-              {data.recentActivity.map((a) => (
-                <li key={a.id} className="py-2.5">
+              {data.recentChanges.map((change) => (
+                <li key={change.id} className="py-2.5">
                   <div className="flex items-baseline justify-between gap-2">
-                    <Link
-                      href={`/leads/${a.leadId}`}
-                      className="text-sm font-medium hover:underline"
-                    >
-                      {a.lead.company}
-                    </Link>
+                    {change.entityType === "Lead" && change.entityId ? (
+                      <Link
+                        href={`/leads/${change.entityId}`}
+                        className="text-sm font-medium hover:underline"
+                      >
+                        {change.summary}
+                      </Link>
+                    ) : (
+                      <p className="text-sm font-medium">{change.summary}</p>
+                    )}
                     <span className="shrink-0 text-[11px] text-muted-foreground">
-                      {formatISTShort(a.createdAt)}
+                      {formatISTShort(change.createdAt)}
                     </span>
                   </div>
                   <p className="text-xs text-muted-foreground">
-                    {a.title}
-                    {a.body ? ` — ${a.body}` : ""}
+                    {change.actorName} · {formatISTDateTime(change.createdAt)} IST
                   </p>
                 </li>
               ))}

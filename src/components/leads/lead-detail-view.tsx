@@ -17,10 +17,11 @@ import {
   StatusBadge,
 } from "@/components/shared/badges";
 import { formatBudget, parseJsonArray } from "@/lib/constants";
-import { formatISTDate, formatISTShort } from "@/lib/datetime";
+import { formatISTDate, formatISTDateTime, formatISTShort } from "@/lib/datetime";
 import { formatPocName } from "@/lib/poc";
 import { LeadDetailActions } from "@/components/leads/lead-detail-actions";
 import { Timeline } from "@/components/activity/timeline";
+import type { HistoryEntry } from "@/lib/actions/history";
 
 type LeadDetail = Lead & {
   pocs: Poc[];
@@ -32,7 +33,13 @@ type LeadDetail = Lead & {
   client: Client | null;
 };
 
-export function LeadDetailView({ lead }: { lead: LeadDetail }) {
+export function LeadDetailView({
+  lead,
+  history = [],
+}: {
+  lead: LeadDetail;
+  history?: HistoryEntry[];
+}) {
   const services = parseJsonArray(lead.services);
   const primaryName = formatPocName(lead.pocs);
 
@@ -48,6 +55,12 @@ export function LeadDetailView({ lead }: { lead: LeadDetail }) {
         <AgencyBadge agency={lead.agency} />
         <StatusBadge status={lead.status} />
         <PriorityBadge priority={lead.priority} />
+        {history[0] ? (
+          <span className="text-xs text-muted-foreground">
+            Last change by {history[0].actorName} ·{" "}
+            {formatISTDateTime(history[0].createdAt)} IST
+          </span>
+        ) : null}
         {lead.client ? (
           <Link
             href="/clients"

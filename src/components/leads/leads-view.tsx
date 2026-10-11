@@ -24,6 +24,7 @@ import {
 import { LeadFormDialog } from "@/components/leads/lead-form-dialog";
 import { formatISTDate, formatISTShort } from "@/lib/datetime";
 import { formatPocName, getPrimaryPoc } from "@/lib/poc";
+import { useCanEdit } from "@/components/auth/access-context";
 import {
   AGENCIES,
   LEAD_STATUSES,
@@ -70,6 +71,7 @@ export function LeadsView({
   const [priority, setPriority] = useState(initialPriority);
   const [openOnly] = useState(initialOpenOnly);
   const [open, setOpen] = useState(false);
+  const canEditLeads = useCanEdit("leads");
 
   const filtered = useMemo(() => {
     const query = q.trim().toLowerCase();
@@ -126,10 +128,12 @@ export function LeadsView({
             />
           </div>
         </div>
-        <Button className="w-full sm:w-auto sm:self-start" onClick={() => setOpen(true)}>
-          <Plus className="size-4" />
-          New lead
-        </Button>
+        {canEditLeads ? (
+          <Button className="w-full sm:w-auto sm:self-start" onClick={() => setOpen(true)}>
+            <Plus className="size-4" />
+            New lead
+          </Button>
+        ) : null}
       </div>
 
       {filtered.length === 0 ? (
@@ -137,10 +141,12 @@ export function LeadsView({
           title="No leads yet"
           description="Create your first lead to start tracking the pipeline."
           action={
-            <Button onClick={() => setOpen(true)}>
-              <Plus className="size-4" />
-              New lead
-            </Button>
+            canEditLeads ? (
+              <Button onClick={() => setOpen(true)}>
+                <Plus className="size-4" />
+                New lead
+              </Button>
+            ) : undefined
           }
         />
       ) : (

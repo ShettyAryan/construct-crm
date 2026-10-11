@@ -55,6 +55,12 @@ export function Timeline({ activities }: { activities: Activity[] }) {
                   {activity.body}
                 </p>
               ) : null}
+              {activity.actorName ? (
+                <p className="mt-1 text-xs text-muted-foreground">
+                  {activity.actorName}
+                  {activity.actorLogin ? ` (${activity.actorLogin})` : ""}
+                </p>
+              ) : null}
             </div>
           </li>
         );

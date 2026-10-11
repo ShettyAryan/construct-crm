@@ -30,6 +30,7 @@ import {
 } from "@/lib/constants";
 import { updateLeadStatus } from "@/lib/actions/leads";
 import { formatPocName } from "@/lib/poc";
+import { useCanEdit } from "@/components/auth/access-context";
 import { cn } from "@/lib/utils";
 
 type LeadCard = Lead & { pocs: Poc[] };
@@ -38,13 +39,16 @@ export function KanbanBoard({ leads }: { leads: LeadCard[] }) {
   const [items, setItems] = useState(leads);
   const [activeId, setActiveId] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
+  const canEditPipeline = useCanEdit("pipeline");
 
   useEffect(() => {
     setItems(leads);
   }, [leads]);
 
   const sensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { distance: 6 } })
+    useSensor(PointerSensor, {
+      activationConstraint: { distance: canEditPipeline ? 6 : 10_000 },
+    })
   );
 
   const columns = useMemo(() => {
@@ -67,6 +71,7 @@ export function KanbanBoard({ leads }: { leads: LeadCard[] }) {
 
   function onDragEnd(event: DragEndEvent) {
     setActiveId(null);
+    if (!canEditPipeline) return;
     const { active, over } = event;
     if (!over) return;
 

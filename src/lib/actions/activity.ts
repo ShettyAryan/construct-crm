@@ -15,13 +15,20 @@ import {
   type MeetingInput,
   type NoteInput,
 } from "@/lib/validators";
+import { requireEdit, requireView } from "@/lib/auth";
+import { logLeadActivity, recordChange } from "@/lib/audit";
 
 function emptyToNull(v?: string | null) {
   return v && v.trim() ? v.trim() : null;
 }
 
 export async function logCall(raw: CallInput) {
+  await requireEdit("calls");
   const data = callSchema.parse(raw);
+  const lead = await db.lead.findUnique({
+    where: { id: data.leadId },
+    select: { company: true },
+  });
   const call = await db.call.create({
     data: {
       leadId: data.leadId,
@@ -33,15 +40,21 @@ export async function logCall(raw: CallInput) {
     },
   });
 
-  await db.activity.create({
-    data: {
-      leadId: data.leadId,
-      type: "CALL",
-      title: data.durationMin
-        ? `Logged call (${data.durationMin} min)`
-        : "Logged call",
-      body: data.summary.trim(),
-    },
+  await logLeadActivity({
+    leadId: data.leadId,
+    type: "CALL",
+    title: data.durationMin
+      ? `Logged call (${data.durationMin} min)`
+      : "Logged call",
+    body: data.summary.trim(),
+  });
+
+  await recordChange({
+    action: "created",
+    entityType: "Call",
+    entityId: call.id,
+    entityLabel: lead?.company ?? "Call",
+    summary: `Logged a call on ${lead?.company ?? "a lead"}`,
   });
 
   revalidateCrm(data.leadId);
@@ -49,7 +62,12 @@ export async function logCall(raw: CallInput) {
 }
 
 export async function logMeeting(raw: MeetingInput) {
+  await requireEdit("meetings");
   const data = meetingSchema.parse(raw);
+  const lead = await db.lead.findUnique({
+    where: { id: data.leadId },
+    select: { company: true },
+  });
   const meeting = await db.meeting.create({
     data: {
       leadId: data.leadId,
@@ -61,13 +79,19 @@ export async function logMeeting(raw: MeetingInput) {
     },
   });
 
-  await db.activity.create({
-    data: {
-      leadId: data.leadId,
-      type: "MEETING",
-      title: "Meeting logged",
-      body: data.summary.trim(),
-    },
+  await logLeadActivity({
+    leadId: data.leadId,
+    type: "MEETING",
+    title: "Meeting logged",
+    body: data.summary.trim(),
+  });
+
+  await recordChange({
+    action: "created",
+    entityType: "Meeting",
+    entityId: meeting.id,
+    entityLabel: lead?.company ?? "Meeting",
+    summary: `Logged a meeting on ${lead?.company ?? "a lead"}`,
   });
 
   revalidateCrm(data.leadId);
@@ -75,8 +99,13 @@ export async function logMeeting(raw: MeetingInput) {
 }
 
 export async function addNote(raw: NoteInput) {
+  await requireEdit("leads");
   const data = noteSchema.parse(raw);
   const body = data.body.trim();
+  const lead = await db.lead.findUnique({
+    where: { id: data.leadId },
+    select: { company: true },
+  });
 
   const note = await db.note.create({
     data: {
@@ -91,13 +120,19 @@ export async function addNote(raw: NoteInput) {
     data: { notes: body },
   });
 
-  await db.activity.create({
-    data: {
-      leadId: data.leadId,
-      type: "NOTE",
-      title: "Note added",
-      body,
-    },
+  await logLeadActivity({
+    leadId: data.leadId,
+    type: "NOTE",
+    title: "Note added",
+    body,
+  });
+
+  await recordChange({
+    action: "created",
+    entityType: "Note",
+    entityId: note.id,
+    entityLabel: lead?.company ?? "Note",
+    summary: `Added a note on ${lead?.company ?? "a lead"}`,
   });
 
   revalidateCrm(data.leadId);
@@ -105,6 +140,7 @@ export async function addNote(raw: NoteInput) {
 }
 
 export async function scheduleFollowUp(raw: FollowUpInput) {
+  await requireEdit("followUps");
   const data = followUpSchema.parse(raw);
   const leadId = emptyToNull(data.leadId);
 
@@ -124,22 +160,41 @@ export async function scheduleFollowUp(raw: FollowUpInput) {
 
   if (leadId) {
     await syncLeadNextFollowUp(leadId);
-    await db.activity.create({
-      data: {
-        leadId,
-        type: "FOLLOW_UP",
-        title: "Follow-up scheduled",
-        body: emptyToNull(data.reminder) ?? `Follow-up on ${data.date}`,
-      },
+    await logLeadActivity({
+      leadId,
+      type: "FOLLOW_UP",
+      title: "Follow-up scheduled",
+      body: emptyToNull(data.reminder) ?? `Follow-up on ${data.date}`,
     });
   }
+
+  const lead = leadId
+    ? await db.lead.findUnique({
+        where: { id: leadId },
+        select: { company: true },
+      })
+    : null;
+
+  await recordChange({
+    action: "created",
+    entityType: "FollowUp",
+    entityId: followUp.id,
+    entityLabel: lead?.company ?? "Follow-up",
+    summary: lead
+      ? `Scheduled a follow-up for ${lead.company}`
+      : "Scheduled a follow-up",
+  });
 
   revalidateCrm(leadId);
   return followUp;
 }
 
 export async function completeFollowUp(id: string) {
-  const followUp = await db.followUp.findUnique({ where: { id } });
+  await requireEdit("followUps");
+  const followUp = await db.followUp.findUnique({
+    where: { id },
+    include: { lead: { select: { company: true } } },
+  });
   if (!followUp) throw new Error("Follow-up not found");
 
   await db.followUp.delete({ where: { id } });
@@ -147,6 +202,16 @@ export async function completeFollowUp(id: string) {
   if (followUp.leadId) {
     await syncLeadNextFollowUp(followUp.leadId);
   }
+
+  await recordChange({
+    action: "deleted",
+    entityType: "FollowUp",
+    entityId: id,
+    entityLabel: followUp.lead?.company ?? "Follow-up",
+    summary: followUp.lead
+      ? `Completed a follow-up for ${followUp.lead.company}`
+      : "Completed a follow-up",
+  });
 
   revalidateCrm(followUp.leadId);
   return followUp;
@@ -161,6 +226,7 @@ export async function toggleFollowUp(id: string, completed: boolean) {
 }
 
 export async function getCalls() {
+  await requireView("calls");
   return db.call.findMany({
     include: { lead: true },
     orderBy: { date: "desc" },
@@ -168,6 +234,7 @@ export async function getCalls() {
 }
 
 export async function getMeetings() {
+  await requireView("meetings");
   return db.meeting.findMany({
     include: { lead: true },
     orderBy: { date: "desc" },
@@ -175,6 +242,7 @@ export async function getMeetings() {
 }
 
 export async function getFollowUps() {
+  await requireView("followUps");
   return db.followUp.findMany({
     where: { completed: false },
     include: {

@@ -11,6 +11,8 @@ import {
 } from "@/lib/sync-lead";
 import { leadSchema, type LeadInput, type PocInput } from "@/lib/validators";
 import { ensureClientForWonLead } from "@/lib/actions/clients";
+import { requireAnyView, requireEdit } from "@/lib/auth";
+import { logLeadActivity, recordChange } from "@/lib/audit";
 
 function emptyToNull(v?: string | null) {
   return v && v.trim() ? v.trim() : null;
@@ -74,6 +76,7 @@ export async function getLeads(params?: {
   priority?: string;
   openOnly?: boolean;
 }) {
+  await requireAnyView(["leads", "pipeline", "tracks"]);
   const where: Record<string, unknown> = {};
   if (params?.agency) where.agency = params.agency;
   if (params?.status) where.status = params.status;
@@ -105,6 +108,7 @@ export async function getLeads(params?: {
 }
 
 export async function getLead(id: string) {
+  await requireAnyView(["leads", "pipeline", "tracks", "clients"]);
   return db.lead.findUnique({
     where: { id },
     include: {
@@ -120,6 +124,7 @@ export async function getLead(id: string) {
 }
 
 export async function getLeadOptions() {
+  await requireAnyView(["leads", "followUps", "calls", "meetings"]);
   return db.lead.findMany({
     where: { status: { notIn: ["Lost"] } },
     select: {
@@ -136,6 +141,7 @@ export async function getLeadOptions() {
 }
 
 export async function createLead(raw: LeadInput) {
+  await requireEdit("leads");
   const parsed = leadSchema.parse(raw);
   const data = mapLeadData(parsed);
   const pocs = normalizePocs(parsed.pocs);
@@ -147,13 +153,11 @@ export async function createLead(raw: LeadInput) {
     },
   });
 
-  await db.activity.create({
-    data: {
-      leadId: lead.id,
-      type: "NOTE",
-      title: "Lead created",
-      body: `${lead.company} added to pipeline`,
-    },
+  await logLeadActivity({
+    leadId: lead.id,
+    type: "NOTE",
+    title: "Lead created",
+    body: `${lead.company} added to pipeline`,
   });
 
   if (data.notes) {
@@ -172,11 +176,20 @@ export async function createLead(raw: LeadInput) {
     await ensureClientForWonLead(lead.id);
   }
 
+  await recordChange({
+    action: "created",
+    entityType: "Lead",
+    entityId: lead.id,
+    entityLabel: lead.company,
+    summary: `Created lead ${lead.company}`,
+  });
+
   revalidateCrm(lead.id);
   return lead;
 }
 
 export async function updateLead(id: string, raw: LeadInput) {
+  await requireEdit("leads");
   const parsed = leadSchema.parse(raw);
   const existing = await db.lead.findUnique({ where: { id } });
   if (!existing) throw new Error("Lead not found");
@@ -196,13 +209,11 @@ export async function updateLead(id: string, raw: LeadInput) {
   });
 
   if (existing.status !== lead.status) {
-    await db.activity.create({
-      data: {
-        leadId: id,
-        type: "STATUS_CHANGE",
-        title: `Moved to ${lead.status}`,
-        body: `Status updated from ${existing.status} to ${lead.status}`,
-      },
+    await logLeadActivity({
+      leadId: id,
+      type: "STATUS_CHANGE",
+      title: `Moved to ${lead.status}`,
+      body: `Status updated from ${existing.status} to ${lead.status}`,
     });
   }
 
@@ -214,11 +225,30 @@ export async function updateLead(id: string, raw: LeadInput) {
     await ensureClientForWonLead(lead.id);
   }
 
+  const changes: string[] = [];
+  if (existing.company !== lead.company) changes.push("company");
+  if (existing.status !== lead.status) {
+    changes.push(`status ${existing.status} → ${lead.status}`);
+  }
+  if (existing.priority !== lead.priority) {
+    changes.push(`priority ${existing.priority} → ${lead.priority}`);
+  }
+  await recordChange({
+    action: "updated",
+    entityType: "Lead",
+    entityId: lead.id,
+    entityLabel: lead.company,
+    summary: changes.length
+      ? `Updated ${lead.company}: ${changes.join(", ")}`
+      : `Updated ${lead.company}`,
+  });
+
   revalidateCrm(id);
   return lead;
 }
 
 export async function updateLeadStatus(id: string, status: LeadStatus) {
+  await requireEdit("pipeline");
   const existing = await db.lead.findUnique({ where: { id } });
   if (!existing) throw new Error("Lead not found");
   if (existing.status === status) return existing;
@@ -228,24 +258,43 @@ export async function updateLeadStatus(id: string, status: LeadStatus) {
     data: { status },
   });
 
-  await db.activity.create({
-    data: {
-      leadId: id,
-      type: "STATUS_CHANGE",
-      title: status === "Won" ? "Deal won" : `Moved to ${status}`,
-      body: `Status updated from ${existing.status} to ${status}`,
-    },
+  await logLeadActivity({
+    leadId: id,
+    type: "STATUS_CHANGE",
+    title: status === "Won" ? "Deal won" : `Moved to ${status}`,
+    body: `Status updated from ${existing.status} to ${status}`,
   });
 
   if (status === "Won") {
     await ensureClientForWonLead(id);
   }
 
+  await recordChange({
+    action: "updated",
+    entityType: "Lead",
+    entityId: id,
+    entityLabel: existing.company,
+    summary: `Moved ${existing.company} from ${existing.status} to ${status}`,
+  });
+
   revalidateCrm(id);
   return lead;
 }
 
 export async function deleteLead(id: string) {
+  await requireEdit("leads");
+  const existing = await db.lead.findUnique({
+    where: { id },
+    select: { company: true },
+  });
+  if (!existing) throw new Error("Lead not found");
   await db.lead.delete({ where: { id } });
+  await recordChange({
+    action: "deleted",
+    entityType: "Lead",
+    entityId: id,
+    entityLabel: existing.company,
+    summary: `Deleted lead ${existing.company}`,
+  });
   revalidateCrm(id);
 }

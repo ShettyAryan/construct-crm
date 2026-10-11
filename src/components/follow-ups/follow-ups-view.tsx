@@ -13,6 +13,7 @@ import { PriorityBadge } from "@/components/shared/badges";
 import { ScheduleFollowUpSheet } from "@/components/activity/schedule-follow-up-sheet";
 import { formatISTDate } from "@/lib/datetime";
 import { completeFollowUp } from "@/lib/actions/activity";
+import { useCanEdit } from "@/components/auth/access-context";
 import {
   Table,
   TableBody,
@@ -35,6 +36,7 @@ export function FollowUpsView({
 }) {
   const [open, setOpen] = useState(false);
   const [pending, startTransition] = useTransition();
+  const canEditFollowUps = useCanEdit("followUps");
 
   function onComplete(id: string) {
     startTransition(async () => {
@@ -53,10 +55,12 @@ export function FollowUpsView({
         title="Follow-ups"
         description="Reminders and next touches · Times in IST"
         actions={
-          <Button className="w-full sm:w-auto" onClick={() => setOpen(true)}>
-            <Plus className="size-4" />
-            Schedule
-          </Button>
+          canEditFollowUps ? (
+            <Button className="w-full sm:w-auto" onClick={() => setOpen(true)}>
+              <Plus className="size-4" />
+              Schedule
+            </Button>
+          ) : null
         }
       />
 
@@ -65,10 +69,12 @@ export function FollowUpsView({
           title="No follow-ups"
           description="Schedule a reminder to stay on top of deals."
           action={
-            <Button onClick={() => setOpen(true)}>
-              <Plus className="size-4" />
-              Schedule
-            </Button>
+            canEditFollowUps ? (
+              <Button onClick={() => setOpen(true)}>
+                <Plus className="size-4" />
+                Schedule
+              </Button>
+            ) : undefined
           }
         />
       ) : (
@@ -78,7 +84,7 @@ export function FollowUpsView({
               <div key={f.id} className="flex gap-3 rounded-lg border p-3.5">
                 <Checkbox
                   checked={false}
-                  disabled={pending}
+                  disabled={pending || !canEditFollowUps}
                   className="mt-1"
                   onCheckedChange={(checked) => {
                     if (checked) onComplete(f.id);
@@ -129,7 +135,7 @@ export function FollowUpsView({
                     <TableCell>
                       <Checkbox
                         checked={false}
-                        disabled={pending}
+                        disabled={pending || !canEditFollowUps}
                         onCheckedChange={(checked) => {
                           if (checked) onComplete(f.id);
                         }}

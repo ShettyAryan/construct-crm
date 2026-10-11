@@ -1,5 +1,6 @@
 import type { Priority } from "@prisma/client";
 import { db } from "@/lib/db";
+import { logLeadActivity } from "@/lib/audit";
 
 /**
  * Keep Lead.nextFollowUp in sync with FollowUp rows (earliest pending).
@@ -80,13 +81,11 @@ export async function syncNotesFromLeadForm(
     });
 
     if (!options?.skipActivity) {
-      await db.activity.create({
-        data: {
-          leadId,
-          type: "NOTE",
-          title: prev ? "Notes updated" : "Note added",
-          body: trimmed,
-        },
+      await logLeadActivity({
+        leadId,
+        type: "NOTE",
+        title: prev ? "Notes updated" : "Note added",
+        body: trimmed,
       });
     }
   }

@@ -8,8 +8,19 @@ import {
   clientPaymentSchema,
   type ClientPaymentInput,
 } from "@/lib/validators";
+import { canEdit } from "@/lib/access";
+import { getCurrentProfile, requireEdit, requireView } from "@/lib/auth";
+import { recordChange } from "@/lib/audit";
 
 export async function ensureClientForWonLead(leadId: string) {
+  const profile = await getCurrentProfile();
+  if (
+    !profile ||
+    (!canEdit(profile, "leads") && !canEdit(profile, "pipeline"))
+  ) {
+    throw new Error("You don't have permission to change this");
+  }
+
   const lead = await db.lead.findUnique({ where: { id: leadId } });
   if (!lead || lead.status !== "Won") return null;
 
@@ -17,7 +28,7 @@ export async function ensureClientForWonLead(leadId: string) {
   const agreed = lead.budget ?? 0;
   const existing = await db.client.findUnique({ where: { leadId } });
 
-  return db.client.upsert({
+  const client = await db.client.upsert({
     where: { leadId },
     create: {
       leadId,
@@ -37,9 +48,22 @@ export async function ensureClientForWonLead(leadId: string) {
         : {}),
     },
   });
+
+  if (!existing) {
+    await recordChange({
+      action: "created",
+      entityType: "Client",
+      entityId: client.id,
+      entityLabel: lead.company,
+      summary: `Opened client record for ${lead.company}`,
+    });
+  }
+
+  return client;
 }
 
 export async function getClients() {
+  await requireView("clients");
   return db.client.findMany({
     include: {
       lead: {
@@ -58,6 +82,7 @@ export async function updateClientPayment(
   clientId: string,
   raw: ClientPaymentInput
 ) {
+  await requireEdit("clients");
   const data = clientPaymentSchema.parse(raw);
 
   const client = await db.client.update({
@@ -68,6 +93,14 @@ export async function updateClientPayment(
     },
   });
 
+  await recordChange({
+    action: "updated",
+    entityType: "Client",
+    entityId: client.id,
+    entityLabel: client.company,
+    summary: `Updated payment for ${client.company}`,
+  });
+
   revalidateCrm(client.leadId);
   return client;
 }
@@ -76,9 +109,18 @@ export async function updateClientWorkStatus(
   clientId: string,
   workStatus: WorkStatus
 ) {
+  await requireEdit("clients");
   const client = await db.client.update({
     where: { id: clientId },
     data: { workStatus },
+  });
+
+  await recordChange({
+    action: "updated",
+    entityType: "Client",
+    entityId: client.id,
+    entityLabel: client.company,
+    summary: `Set ${client.company} work to ${workStatus}`,
   });
 
   revalidateCrm(client.leadId);
@@ -92,6 +134,7 @@ const leadWithPocs = {
 };
 
 export async function getTracksData() {
+  await requireView("tracks");
   const [activeLeads, ongoingClients, completedClients] = await Promise.all([
     db.lead.findMany({
       where: { status: { notIn: ["Won", "Lost"] } },
