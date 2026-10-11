@@ -8,7 +8,7 @@ import {
 
 export default async function LoginPage() {
   const profile = await getCurrentProfile();
-  if (profile) redirect("/");
+  if (profile) redirect("/start");
 
   await ensureBootstrapAdmin();
   const showBootstrapHint = await shouldShowBootstrapHint();

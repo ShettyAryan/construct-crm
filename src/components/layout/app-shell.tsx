@@ -76,14 +76,14 @@ const bottomNav = [
   { href: "/follow-ups", label: "Follow-ups", icon: Bell, area: "followUps" as const },
 ];
 
-function WorkspaceSwitch({ inWork }: { inWork: boolean }) {
+function WorkspaceSwitch({ mode }: { mode: "client" | "work" | "start" }) {
   return (
     <div className="mx-2 mb-3 grid grid-cols-2 gap-1 rounded-lg bg-muted/70 p-1">
       <Link
         href="/"
         className={cn(
           "rounded-md px-2 py-1.5 text-center text-xs",
-          !inWork
+          mode === "client"
             ? "bg-background font-medium text-foreground shadow-sm"
             : "text-muted-foreground"
         )}
@@ -94,7 +94,7 @@ function WorkspaceSwitch({ inWork }: { inWork: boolean }) {
         href="/work"
         className={cn(
           "rounded-md px-2 py-1.5 text-center text-xs",
-          inWork
+          mode === "work"
             ? "bg-background font-medium text-foreground shadow-sm"
             : "text-muted-foreground"
         )}
@@ -150,17 +150,24 @@ function NavLinks({
   );
 }
 
-function Brand({ inWork }: { inWork: boolean }) {
+function Brand({ mode }: { mode: "client" | "work" | "start" }) {
   return (
     <div className="px-4 py-4">
-      <Link href={inWork ? "/work" : "/"} className="block">
+      <Link
+        href={mode === "work" ? "/work" : mode === "start" ? "/start" : "/"}
+        className="block"
+      >
         <p className="text-xs font-medium tracking-widest text-muted-foreground uppercase">
           Construct
         </p>
         <p className="text-lg font-semibold tracking-tight">CRM</p>
       </Link>
       <p className="mt-1 text-xs text-muted-foreground">
-        {inWork ? "Ongoing work" : "Client track"}
+        {mode === "work"
+          ? "Ongoing work"
+          : mode === "start"
+            ? "Choose a workspace"
+            : "Client track"}
       </p>
     </div>
   );
@@ -190,6 +197,7 @@ export function AppShell({
   }, [open]);
 
   const inWork = pathname === "/work" || pathname.startsWith("/work/");
+  const mode = pathname === "/start" ? "start" : inWork ? "work" : "client";
   const bottomItems = (inWork
     ? [{ href: "/work", label: "Calendar", icon: Calendar, area: "work" as const }]
     : bottomNav
@@ -200,10 +208,10 @@ export function AppShell({
     <div className="flex min-h-dvh min-h-screen bg-background">
       {/* Desktop / large tablet sidebar */}
       <aside className="sticky top-0 hidden h-dvh h-screen w-56 shrink-0 flex-col border-r border-sidebar-border bg-sidebar lg:flex">
-        <Brand inWork={inWork} />
+        <Brand mode={mode} />
         <Separator />
         <div className="flex-1 overflow-y-auto py-3">
-          <WorkspaceSwitch inWork={inWork} />
+          <WorkspaceSwitch mode={mode} />
           <NavLinks user={user} inWork={inWork} />
         </div>
         <AccountMenu user={user} />
@@ -219,7 +227,7 @@ export function AppShell({
           />
           <aside className="absolute left-0 top-0 flex h-full w-[min(18rem,85vw)] flex-col bg-sidebar shadow-xl">
             <div className="flex items-center justify-between pr-2">
-              <Brand inWork={inWork} />
+              <Brand mode={mode} />
               <Button
                 variant="ghost"
                 size="icon"
@@ -231,7 +239,7 @@ export function AppShell({
             </div>
             <Separator />
             <div className="flex-1 overflow-y-auto py-3">
-              <WorkspaceSwitch inWork={inWork} />
+              <WorkspaceSwitch mode={mode} />
               <NavLinks user={user} inWork={inWork} onNavigate={() => setOpen(false)} />
             </div>
             <div className="pb-[env(safe-area-inset-bottom)]">
@@ -253,7 +261,7 @@ export function AppShell({
             <Menu className="size-4" />
           </Button>
           <span className="truncate text-sm font-semibold">
-            {inWork ? "Ongoing work" : "Client track"}
+            {mode === "start" ? "Construct CRM" : inWork ? "Ongoing work" : "Client track"}
           </span>
           <div className="ml-auto">
             <ThemeToggle />
