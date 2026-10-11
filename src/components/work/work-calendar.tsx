@@ -17,10 +17,7 @@ import {
   updateProjectDeadline,
   updateProjectProgress,
 } from "@/lib/actions/work";
-import {
-  PROJECT_STATUS_LABELS,
-  type ProjectStatusValue,
-} from "@/lib/project-status";
+import { PROJECT_STATUS_LABELS } from "@/lib/project-status";
 import { cn } from "@/lib/utils";
 import type { WorkProjectRow } from "@/components/work/work-list";
 

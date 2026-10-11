@@ -17,7 +17,7 @@ import {
   updateProjectProgress,
   updateProjectStatus,
 } from "@/lib/actions/work";
-import { formatISTDate, formatISTDateTime, toISTDateInput } from "@/lib/datetime";
+import { formatISTDateTime, toISTDateInput } from "@/lib/datetime";
 import { Input } from "@/components/ui/input";
 import {
   PROJECT_STATUSES,
@@ -124,7 +124,7 @@ export function WorkDetailView({
               href={`/work?client=${project.client.id}`}
               className={cn(buttonVariants({ variant: "outline", size: "sm" }))}
             >
-              This client's projects
+              This client&apos;s projects
             </Link>
             <Link
               href="/work"
