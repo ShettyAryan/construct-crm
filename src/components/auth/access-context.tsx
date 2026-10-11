@@ -28,3 +28,12 @@ export function useCanEdit(area: AccessArea) {
   const user = useSessionUser();
   return user.isAdmin || user.access[area] === "edit";
 }
+
+export function useCanView(area: AccessArea) {
+  const user = useSessionUser();
+  return (
+    user.isAdmin ||
+    user.access[area] === "view" ||
+    user.access[area] === "edit"
+  );
+}

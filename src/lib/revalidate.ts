@@ -7,6 +7,7 @@ export function revalidateCrm(leadId?: string | null) {
   revalidatePath("/pipeline");
   revalidatePath("/tracks");
   revalidatePath("/clients");
+  revalidatePath("/work");
   revalidatePath("/follow-ups");
   revalidatePath("/calls");
   revalidatePath("/meetings");

@@ -39,9 +39,10 @@ export default async function RootLayout({
   const pathname = (await headers()).get("x-pathname") ?? "";
   const profile = await getCurrentProfile();
   const isLogin = pathname === "/login";
+  const isStart = pathname === "/start";
 
   if (!profile && !isLogin) redirect("/login");
-  if (profile && isLogin) redirect("/");
+  if (profile && isLogin) redirect("/start");
 
   return (
     <html lang="en" suppressHydrationWarning>
@@ -49,7 +50,7 @@ export default async function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} font-sans antialiased`}
       >
         <ThemeProvider>
-          {profile ? (
+          {profile && !isStart ? (
             <AppShell user={toSessionUser(profile)}>{children}</AppShell>
           ) : (
             children

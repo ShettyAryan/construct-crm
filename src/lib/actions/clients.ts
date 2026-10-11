@@ -11,6 +11,11 @@ import {
 import { canEdit } from "@/lib/access";
 import { getCurrentProfile, requireEdit, requireView } from "@/lib/auth";
 import { recordChange } from "@/lib/audit";
+import {
+  applyClientWorkStatus,
+  ensureWorkProjectsForClient,
+  linkOngoingClientProjects,
+} from "@/lib/work-sync";
 
 export async function ensureClientForWonLead(leadId: string) {
   const profile = await getCurrentProfile();
@@ -59,11 +64,16 @@ export async function ensureClientForWonLead(leadId: string) {
     });
   }
 
+  if (client.workStatus === "Ongoing") {
+    await ensureWorkProjectsForClient(client, "InProgress");
+  }
+
   return client;
 }
 
 export async function getClients() {
   await requireView("clients");
+  await linkOngoingClientProjects();
   return db.client.findMany({
     include: {
       lead: {
@@ -72,6 +82,10 @@ export async function getClients() {
             orderBy: [{ isPrimary: "desc" }, { createdAt: "asc" }],
           },
         },
+      },
+      workProjects: {
+        select: { id: true, name: true },
+        orderBy: { name: "asc" },
       },
     },
     orderBy: { updatedAt: "desc" },
@@ -114,6 +128,7 @@ export async function updateClientWorkStatus(
     where: { id: clientId },
     data: { workStatus },
   });
+  await applyClientWorkStatus(client, workStatus);
 
   await recordChange({
     action: "updated",

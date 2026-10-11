@@ -13,6 +13,7 @@ import {
   WorkStatusBadge,
 } from "@/components/shared/badges";
 import { PageHeader } from "@/components/shared/page-header";
+import { OngoingWorkButton } from "@/components/work/client-work-switch";
 import { formatBudget, STATUS_LABELS } from "@/lib/constants";
 import { formatISTShort } from "@/lib/datetime";
 import { updateClientWorkStatus } from "@/lib/actions/clients";
@@ -225,6 +226,7 @@ function ClientTrackCard({
           <p className="font-medium">{formatBudget(outstanding)}</p>
         </div>
       </div>
+      <OngoingWorkButton clientId={client.id} className="mt-3" />
       {canEditClients ? (
       <Button
         variant="outline"

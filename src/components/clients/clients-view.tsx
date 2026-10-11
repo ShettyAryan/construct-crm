@@ -30,9 +30,51 @@ import {
   updateClientPayment,
   updateClientWorkStatus,
 } from "@/lib/actions/clients";
-import { useCanEdit } from "@/components/auth/access-context";
+import { useCanEdit, useCanView } from "@/components/auth/access-context";
+import { OngoingWorkButton } from "@/components/work/client-work-switch";
 
-type ClientRow = Client & { lead: Lead & { pocs: Poc[] } };
+type ClientRow = Client & {
+  lead: Lead & { pocs: Poc[] };
+  workProjects: { id: string; name: string }[];
+};
+
+function ProjectNames({ client }: { client: ClientRow }) {
+  const canViewWork = useCanView("work");
+  const linked = new Map(client.workProjects.map((project) => [project.name, project.id]));
+  const items: { name: string; id?: string }[] = [];
+  const seen = new Set<string>();
+
+  for (const name of parseJsonArray(client.projects)) {
+    const trimmed = name.trim();
+    if (!trimmed || seen.has(trimmed)) continue;
+    seen.add(trimmed);
+    items.push({ name: trimmed, id: linked.get(trimmed) });
+  }
+  for (const project of client.workProjects) {
+    if (seen.has(project.name)) continue;
+    seen.add(project.name);
+    items.push({ name: project.name, id: project.id });
+  }
+
+  if (items.length === 0) return <>—</>;
+
+  return (
+    <>
+      {items.map((item, index) => (
+        <span key={item.id ?? item.name}>
+          {index > 0 ? ", " : null}
+          {canViewWork && item.id ? (
+            <Link href={`/work/${item.id}`} className="hover:underline">
+              {item.name}
+            </Link>
+          ) : (
+            item.name
+          )}
+        </span>
+      ))}
+    </>
+  );
+}
 
 export function ClientsView({
   clients,
@@ -133,7 +175,6 @@ export function ClientsView({
         <>
           <div className="grid gap-3 md:hidden">
             {visible.map((client) => {
-              const projects = parseJsonArray(client.projects);
               const outstanding = Math.max(
                 0,
                 client.amountAgreed - client.amountCollected
@@ -144,12 +185,18 @@ export function ClientsView({
                   className="rounded-lg border bg-card p-3.5"
                 >
                   <div className="flex items-start justify-between gap-2">
-                    <Link
-                      href={`/leads/${client.leadId}`}
-                      className="font-medium hover:underline"
-                    >
-                      {client.company}
-                    </Link>
+                    <div className="min-w-0">
+                      <Link
+                        href={`/leads/${client.leadId}`}
+                        className="font-medium hover:underline"
+                      >
+                        {client.company}
+                      </Link>
+                      <OngoingWorkButton
+                        clientId={client.id}
+                        className="mt-2"
+                      />
+                    </div>
                     <div className="flex flex-col items-end gap-1">
                       <AgencyBadge agency={client.lead.agency} />
                       <WorkStatusBadge status={client.workStatus} />
@@ -173,8 +220,8 @@ export function ClientsView({
                       <p className="font-medium">{formatBudget(outstanding)}</p>
                     </div>
                   </div>
-                  <p className="mt-2 text-xs text-muted-foreground line-clamp-1">
-                    {projects.join(", ") || "No projects"}
+                  <p className="mt-2 text-xs text-muted-foreground line-clamp-2">
+                    <ProjectNames client={client} />
                   </p>
                   {canEditClients ? (
                   <div className="mt-3 grid grid-cols-2 gap-2">
@@ -232,7 +279,6 @@ export function ClientsView({
               </TableHeader>
               <TableBody>
                 {visible.map((client) => {
-                  const projects = parseJsonArray(client.projects);
                   const outstanding = Math.max(
                     0,
                     client.amountAgreed - client.amountCollected
@@ -246,6 +292,7 @@ export function ClientsView({
                         >
                           {client.company}
                         </Link>
+                        <OngoingWorkButton clientId={client.id} className="mt-2" />
                       </TableCell>
                       <TableCell>
                         <AgencyBadge agency={client.lead.agency} />
@@ -260,8 +307,8 @@ export function ClientsView({
                       <TableCell className="text-muted-foreground">
                         {formatBudget(outstanding)}
                       </TableCell>
-                      <TableCell className="max-w-xs truncate">
-                        {projects.join(", ") || "—"}
+                      <TableCell className="max-w-xs">
+                        <ProjectNames client={client} />
                       </TableCell>
                       <TableCell>
                         {canEditClients ? (

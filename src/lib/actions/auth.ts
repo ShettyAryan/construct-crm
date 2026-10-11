@@ -45,7 +45,7 @@ export async function loginFromForm(
     }),
   ]);
   await setSessionCookie(token, expiresAt);
-  redirect("/");
+  redirect("/start");
 }
 
 export async function logout() {

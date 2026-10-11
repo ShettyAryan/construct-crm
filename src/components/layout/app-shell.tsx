@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   Bell,
+  Briefcase,
   Building2,
   Calendar,
   CheckSquare,
@@ -39,9 +40,10 @@ const icons = {
   CheckSquare,
   History,
   Shield,
+  Briefcase,
 } as const;
 
-const nav = [
+const clientNav = [
   { href: "/", label: "Dashboard", icon: "LayoutDashboard" as const, area: null, admin: false },
   { href: "/leads", label: "Leads", icon: "Users" as const, area: "leads" as const, admin: false },
   { href: "/pipeline", label: "Pipeline", icon: "Kanban" as const, area: "pipeline" as const, admin: false },
@@ -51,6 +53,12 @@ const nav = [
   { href: "/follow-ups", label: "Follow-ups", icon: "Bell" as const, area: "followUps" as const, admin: false },
   { href: "/clients", label: "Clients", icon: "Building2" as const, area: "clients" as const, admin: false },
   { href: "/tasks", label: "Tasks", icon: "CheckSquare" as const, area: "tasks" as const, admin: false },
+  { href: "/history", label: "History", icon: "History" as const, area: null, admin: false },
+  { href: "/profiles", label: "Profiles", icon: "Shield" as const, area: null, admin: true },
+];
+
+const workNav = [
+  { href: "/work", label: "Projects", icon: "Briefcase" as const, area: "work" as const, admin: false },
   { href: "/history", label: "History", icon: "History" as const, area: null, admin: false },
   { href: "/profiles", label: "Profiles", icon: "Shield" as const, area: null, admin: true },
 ];
@@ -68,15 +76,48 @@ const bottomNav = [
   { href: "/follow-ups", label: "Follow-ups", icon: Bell, area: "followUps" as const },
 ];
 
+function WorkspaceSwitch({ inWork }: { inWork: boolean }) {
+  return (
+    <div className="mx-2 mb-3 grid grid-cols-2 gap-1 rounded-lg bg-muted/70 p-1">
+      <Link
+        href="/"
+        className={cn(
+          "rounded-md px-2 py-1.5 text-center text-xs",
+          !inWork
+            ? "bg-background font-medium text-foreground shadow-sm"
+            : "text-muted-foreground"
+        )}
+      >
+        Client track
+      </Link>
+      <Link
+        href="/work"
+        className={cn(
+          "rounded-md px-2 py-1.5 text-center text-xs",
+          inWork
+            ? "bg-background font-medium text-foreground shadow-sm"
+            : "text-muted-foreground"
+        )}
+      >
+        Ongoing work
+      </Link>
+    </div>
+  );
+}
+
 function NavLinks({
   user,
+  inWork,
   onNavigate,
 }: {
   user: SessionUser;
+  inWork: boolean;
   onNavigate?: () => void;
 }) {
   const pathname = usePathname();
-  const items = nav.filter((item) => canOpen(user, item.area, item.admin));
+  const items = (inWork ? workNav : clientNav).filter((item) =>
+    canOpen(user, item.area, item.admin)
+  );
 
   return (
     <nav className="flex flex-col gap-0.5 px-2">
@@ -85,7 +126,9 @@ function NavLinks({
         const active =
           item.href === "/"
             ? pathname === "/"
-            : pathname.startsWith(item.href);
+            : item.href === "/work"
+              ? pathname === "/work" || pathname.startsWith("/work/")
+              : pathname.startsWith(item.href);
         return (
           <Link
             key={item.href}
@@ -107,16 +150,18 @@ function NavLinks({
   );
 }
 
-function Brand() {
+function Brand({ inWork }: { inWork: boolean }) {
   return (
     <div className="px-4 py-4">
-      <Link href="/" className="block">
+      <Link href={inWork ? "/work" : "/"} className="block">
         <p className="text-xs font-medium tracking-widest text-muted-foreground uppercase">
           Construct
         </p>
         <p className="text-lg font-semibold tracking-tight">CRM</p>
       </Link>
-      <p className="mt-1 text-xs text-muted-foreground">Dev & XR pipeline</p>
+      <p className="mt-1 text-xs text-muted-foreground">
+        {inWork ? "Ongoing work" : "Client track"}
+      </p>
     </div>
   );
 }
@@ -144,17 +189,22 @@ export function AppShell({
     };
   }, [open]);
 
-  const bottomItems = bottomNav.filter((item) => canOpen(user, item.area));
+  const inWork = pathname === "/work" || pathname.startsWith("/work/");
+  const bottomItems = (inWork
+    ? [{ href: "/work", label: "Projects", icon: Briefcase, area: "work" as const }]
+    : bottomNav
+  ).filter((item) => canOpen(user, item.area));
 
   return (
     <AccessProvider user={user}>
     <div className="flex min-h-dvh min-h-screen bg-background">
       {/* Desktop / large tablet sidebar */}
       <aside className="sticky top-0 hidden h-dvh h-screen w-56 shrink-0 flex-col border-r border-sidebar-border bg-sidebar lg:flex">
-        <Brand />
+        <Brand inWork={inWork} />
         <Separator />
         <div className="flex-1 overflow-y-auto py-3">
-          <NavLinks user={user} />
+          <WorkspaceSwitch inWork={inWork} />
+          <NavLinks user={user} inWork={inWork} />
         </div>
         <AccountMenu user={user} />
       </aside>
@@ -169,7 +219,7 @@ export function AppShell({
           />
           <aside className="absolute left-0 top-0 flex h-full w-[min(18rem,85vw)] flex-col bg-sidebar shadow-xl">
             <div className="flex items-center justify-between pr-2">
-              <Brand />
+              <Brand inWork={inWork} />
               <Button
                 variant="ghost"
                 size="icon"
@@ -181,7 +231,8 @@ export function AppShell({
             </div>
             <Separator />
             <div className="flex-1 overflow-y-auto py-3">
-              <NavLinks user={user} onNavigate={() => setOpen(false)} />
+              <WorkspaceSwitch inWork={inWork} />
+              <NavLinks user={user} inWork={inWork} onNavigate={() => setOpen(false)} />
             </div>
             <div className="pb-[env(safe-area-inset-bottom)]">
               <AccountMenu user={user} />
@@ -201,7 +252,9 @@ export function AppShell({
           >
             <Menu className="size-4" />
           </Button>
-          <span className="truncate text-sm font-semibold">Construct CRM</span>
+          <span className="truncate text-sm font-semibold">
+            {inWork ? "Ongoing work" : "Client track"}
+          </span>
           <div className="ml-auto">
             <ThemeToggle />
           </div>

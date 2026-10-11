@@ -39,6 +39,7 @@ const profileSchema = z.object({
     clients: accessLevel,
     tasks: accessLevel,
     tracks: accessLevel,
+    work: accessLevel,
   }),
 });
 

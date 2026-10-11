@@ -21,6 +21,7 @@ import { formatISTDate, formatISTDateTime, formatISTShort } from "@/lib/datetime
 import { formatPocName } from "@/lib/poc";
 import { LeadDetailActions } from "@/components/leads/lead-detail-actions";
 import { Timeline } from "@/components/activity/timeline";
+import { OngoingWorkButton } from "@/components/work/client-work-switch";
 import type { HistoryEntry } from "@/lib/actions/history";
 
 type LeadDetail = Lead & {
@@ -62,12 +63,7 @@ export function LeadDetailView({
           </span>
         ) : null}
         {lead.client ? (
-          <Link
-            href="/clients"
-            className="text-xs text-muted-foreground underline-offset-4 hover:underline"
-          >
-            View client record
-          </Link>
+          <OngoingWorkButton clientId={lead.client.id} />
         ) : null}
       </div>
 

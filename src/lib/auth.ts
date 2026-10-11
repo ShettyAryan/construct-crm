@@ -37,6 +37,7 @@ export function toSessionUser(profile: Profile): SessionUser {
           clients: "edit",
           tasks: "edit",
           tracks: "edit",
+          work: "edit",
         }
       : parseAccess(profile.access),
   };

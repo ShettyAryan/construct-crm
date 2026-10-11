@@ -39,6 +39,11 @@ export const ACCESS_AREAS = [
     label: "Tracks",
     description: "Active, ongoing, and completed work",
   },
+  {
+    key: "work",
+    label: "Ongoing work",
+    description: "Project managers, status, and updates",
+  },
 ] as const;
 
 export type AccessArea = (typeof ACCESS_AREAS)[number]["key"];
@@ -55,6 +60,7 @@ export function defaultAccess(): AccessMap {
     clients: "edit",
     tasks: "edit",
     tracks: "edit",
+    work: "edit",
   };
 }
 
